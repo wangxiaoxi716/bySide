@@ -2,12 +2,12 @@ import { getState, updateState } from './state.js';
 
 /** All stages are labelled simulations. No camera inference or meal is saved. */
 export const DEMO_STEPS = Object.freeze([
-  Object.freeze({ title: '初见', description: '演示开始：两片嫩叶的小芽团来到你的桌边。', duration: 6000 }),
-  Object.freeze({ title: '示例餐食出现', description: '演示餐食入场：展示米饭、青菜与豆腐的示例搭配。', duration: 6000 }),
-  Object.freeze({ title: '确认食材', description: '演示确认步骤：模拟用户确认主食、蔬菜和蛋白质来源。', duration: 6000 }),
-  Object.freeze({ title: '对话回应', description: '演示陪伴回应：小精灵陪你慢慢吃饭，叶片逐渐舒展。', duration: 6000 }),
-  Object.freeze({ title: '花苞', description: '演示成长加速：把长期积累压缩展示，头顶出现一颗花苞。', duration: 6000 }),
-  Object.freeze({ title: '多花绽放', description: '演示最终形态：三朵小花绽放，留下共同成长的想象。', duration: 6000 }),
+  Object.freeze({ title: '初见', description: '演示开始：两片嫩叶的小芽团来到你的桌边。', duration: 3000 }),
+  Object.freeze({ title: '示例餐食出现', description: '演示餐食入场：展示米饭、青菜与豆腐的示例搭配。', duration: 3000 }),
+  Object.freeze({ title: '确认食材', description: '演示确认步骤：模拟用户确认主食、蔬菜和蛋白质来源。', duration: 3000 }),
+  Object.freeze({ title: '对话回应', description: '演示陪伴回应：小精灵陪你慢慢吃饭，叶片逐渐舒展。', duration: 3000 }),
+  Object.freeze({ title: '花苞', description: '演示成长加速：把长期积累压缩展示，头顶出现一颗花苞。', duration: 3000 }),
+  Object.freeze({ title: '多花绽放', description: '演示最终形态：三朵小花绽放，留下共同成长的想象。', duration: 3000 }),
 ]);
 
 const STEPS = [
