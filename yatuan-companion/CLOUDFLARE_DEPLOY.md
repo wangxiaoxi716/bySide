@@ -125,10 +125,14 @@ Cloudflare Workers 的上游请求使用 `redirect: manual`，由状态码判断
 
 ## GitHub Actions 自动部署验证记录
 
-工作流已在本地准备，YAML、内嵌 Bash 语法、`npm run check` 和 16 项 Cloudflare 测试均通过。远端启用和首次流水线结果由集成执行者补充；本节尚未声明自动部署成功。
+2026-10-17 23:12（Asia/Shanghai）已由 main 推送触发并成功完成首次自动部署。
 
-- 适配源文件和工作流进入远端 main 的提交：待补充。
-- GitHub 部署 Secret 配置状态：待补充，只记录已配置/未配置，不记录值。
-- main push 触发的 Actions 运行 URL 与结果：待验证。
-- 自动发布产生的 Production 部署 ID / URL：待验证。
-- 自定义域名首页、`/api/health` 以及必要的聊天/TTS 回归：待验证。
+- 启用提交：`dc071775281e768061d4bbec54ff26a1f6485f15`，包含工作流和完整 Cloudflare 适配源文件。
+- GitHub Secret `CLOUDFLARE_API_TOKEN` 已配置；专用令牌仅含当前账户的 Cloudflare Pages Edit 权限，不设置到期日，可在 Cloudflare 撤销。
+- [首次自动部署运行记录](https://github.com/wangxiaoxi716/bySide/actions/runs/39044008856)：事件为 push，分支 main，22 秒完成，所有步骤成功。
+- 云端 JavaScript 语法检查和 16 项 Cloudflare 测试均通过；静态资源与 Functions 一并发布。
+- 自动生成的 Production URL：https://b0934c90.byside-49n.pages.dev 。
+- 自定义域名 `/api/health` 实测返回 `configured: true`、`model: deepseek-flash`；原有 AI/TTS Secret 继续由 Cloudflare 管理。
+- 工作流固定使用 Ubuntu 24.04、官方 checkout/setup-node 的 Node 24 运行时版本；应用本身使用 Node.js 22 和 Wrangler 4.118.0。
+
+后续每次 main 推送都可在仓库 Actions 查看对应的发布状态；该记录保存首次成功的事实，最新 Production 以 Actions 和 Cloudflare 控制台为准。
