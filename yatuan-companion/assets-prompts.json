@@ -1,0 +1,31 @@
+{
+  "mode": "built-in image_gen",
+  "status": "generation_failed_network",
+  "failure": "image generation failed: connection failed: error sending request",
+  "assets": [
+    {
+      "filename": "forest-room.png",
+      "transparent_background": false,
+      "reference_image": "dist/assets/design-reference.png",
+      "prompt": "Use case: stylized-concept. Asset type: production background image for a responsive desktop pet web app. Reference image role: visual style and environment reference only. Generate one wide 16:10 image of the charming sunlit forest treehouse from the reference, removing ALL characters, UI frames, buttons, captions and text. Warm, premium, richly detailed 2.5D illustrated/3D storybook miniature room, golden sunlight through a large round window in the upper center/right revealing distant green forest, rough warm wooden shelving and beams, leafy vines, little potted plants, cream cushions and moss green carpet. Composition: open uncluttered center foreground with broad flat mossy green carpet suitable for later compositing a pet. Furniture and plants frame left/right edges, no table or large plant blocks center foreground. Eye-level cozy interior. Beautiful greens, buttercream, golden wood. No characters, no silhouettes, no UI, no letters, no watermark. High quality landscape game background."
+    },
+    {
+      "filename": "yatuan.png",
+      "transparent_background": true,
+      "reference_image": "dist/assets/yatuan-reference.png",
+      "prompt": "Use case: identity-preserve. Asset type: single transparent-background desktop pet PNG sprite. Reference image role: exact character identity and material reference. Output ONLY ONE full-body character, the front-facing cream seed spirit 芽团 from the top-left of the reference sheet. Keep the plush rounded cream seed body, two asymmetric green leaves growing from the top, tiny orange feet, short soft arms, warm dark brown oval eyes, tiny curved smiling mouth, warm rosy cheeks, very soft short fuzzy texture. One hand gently raised, the other relaxed. Front view with extremely slight three-quarter turn. Match the reference precisely, do not redesign. Fill most of square canvas while retaining 8% clear margin including all leaves and feet. Genuinely transparent background with clean alpha edges. No floor, no cast shadow, no backdrop, no rug, no bowl, no lettering, no labels, no duplicate characters, no decorative particles. Warm soft studio lighting on character only, premium charming 3D storybook render."
+    },
+    {
+      "filename": "yatuan-bloom.png",
+      "transparent_background": true,
+      "reference_image": "dist/assets/growth-reference.png",
+      "prompt": "Use case: identity-preserve. Asset type: single transparent-background desktop pet grown-form PNG sprite. Reference image role: exact 芽团 character identity and growth style. Output ONLY ONE full-body cream seed spirit 芽团. Keep the plush round cream body, TWO characteristic asymmetric green leaves on top, tiny orange feet, dark brown oval eyes, tiny curved smiling mouth, rosy cheeks, short fuzzy surface. Front view with extremely slight three-quarter turn, one hand gently raised and other relaxed, same recognizable proportions. Growth addition: a very short elegant green branch among the original two leaves bears exactly THREE small flowers, one butter-yellow, one ivory blush, one soft pale pink. Flowers are modest and delicate, not a large bouquet. Body shape and leaf identity preserved. Fill square canvas with 8% clear margin around highest flowers and feet. Genuinely transparent alpha background, clean edges. No floor, no shadows outside silhouette, no rug, no text, no labels, no duplicate characters, no glitter. Warm premium soft 3D storybook rendering."
+    },
+    {
+      "filename": "human.png",
+      "transparent_background": true,
+      "reference_image": "dist/assets/human-reference.png",
+      "prompt": "Use case: identity-preserve. Asset type: single transparent-background virtual human companion full-body PNG sprite. Reference image role: exact fictional adult woman's identity, outfit and gentle stylized rendering. Create ONE adult woman matching the reference: warm brown short bob hair, subtle little leaf hairpin, friendly expressive brown eyes, natural warm smile, soft peach/apricot knit cardigan with ivory inner shirt, sage-gray wide trousers, cream slippers. She is seated on a small low cream padded wooden stool, knees together, one relaxed hand resting on thigh and one hand gently raised in greeting. Show entire body including stool and both feet, a comfortable front three-quarter angle toward viewer. Preserve adult proportions and modest clothing; slightly stylized polished 3D animation, not chibi, not photoreal. Square composition, character fills frame with 8% transparent margin. Genuinely transparent alpha background. No ground, no room, no rug, no floating graphics, no text, no logos, no extra props or people. Warm soft light on subject only."
+    }
+  ]
+}

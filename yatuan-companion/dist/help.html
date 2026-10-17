@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f6ef">
+  <title>芽团 · 真实陪伴连接指南</title>
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <style>
+    :root{color-scheme:light;--paper:#fffef9;--bg:#f7f6ef;--ink:#35402f;--muted:#75806a;--leaf:#627b46;--line:#dfe5d4;--soft:#edf2e4;--gold:#b18b4b;--cream:#f6edda;font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;font-size:15px;line-height:1.8;color:var(--ink)}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg)}a{color:var(--leaf);text-underline-offset:3px}button{font:inherit;cursor:pointer}a:focus-visible,button:focus-visible{outline:3px solid #a2b77b;outline-offset:4px}p{margin:0 0 14px}h1,h2,h3{line-height:1.45;margin:0}h2{font-size:25px;font-weight:650;letter-spacing:.5px}h3{font-size:16px;font-weight:650}ul,ol{padding-left:21px;margin:12px 0}li+li{margin-top:7px}code{font:12px/1.65 ui-monospace,SFMono-Regular,Consolas,monospace;background:#eaf0e2;border-radius:4px;padding:2px 5px;overflow-wrap:anywhere}pre{white-space:pre-wrap;overflow-wrap:anywhere;margin:14px 0 0;padding:20px 23px;background:#303c2d;color:#edf3e6;border-radius:15px;font:12px/1.9 ui-monospace,SFMono-Regular,Consolas,monospace}pre code{background:none;color:inherit;padding:0}strong{font-weight:650}.shell{max-width:1120px;margin:auto;padding:0 40px}.topbar{display:flex;justify-content:space-between;align-items:center;padding:23px 0;border-bottom:1px solid var(--line);gap:18px}.brand{display:flex;align-items:center;gap:10px;font-size:19px;font-weight:650;letter-spacing:2px;text-decoration:none;color:var(--ink)}.brand img{width:35px;height:35px}.top-actions{display:flex;gap:10px;align-items:center}.pill-button{border:1px solid var(--line);border-radius:24px;background:var(--paper);padding:8px 17px;color:var(--leaf);text-decoration:none;font-size:12px}.hero{position:relative;padding:66px 0 39px;max-width:850px}.eyebrow{display:block;font-size:11px;letter-spacing:2.2px;color:#889771;margin-bottom:16px}.hero h1{font-size:43px;letter-spacing:1px;line-height:1.4}.hero h1 span{color:var(--leaf)}.lead{font-size:17px;color:var(--muted);line-height:1.95;max-width:720px;margin:21px 0 0}.hero-tags{display:flex;gap:9px;flex-wrap:wrap;margin-top:24px}.hero-tags span{background:#eaf0df;color:#6b8150;border-radius:18px;padding:4px 12px;font-size:11px}.intro-note{padding:20px 24px;background:#f0ebdf;border:1px solid #e6decb;border-radius:16px;color:#7e7155;font-size:13px;margin-bottom:35px}.intro-note strong{color:#655d46}.toc{display:flex;gap:12px 21px;flex-wrap:wrap;padding:18px 0 24px;border-bottom:1px solid var(--line);font-size:12px}.toc a{text-decoration:none}.section{padding:43px 0;border-bottom:1px solid var(--line);scroll-margin-top:25px}.section-head{display:flex;align-items:baseline;gap:16px;margin-bottom:21px}.section-no{font:italic 25px Georgia,serif;color:#acb99b}.section-intro{color:var(--muted);font-size:14px;margin-top:-7px;margin-bottom:22px}.grid{display:grid;gap:16px}.grid.two{grid-template-columns:1fr 1fr}.grid.three{grid-template-columns:repeat(3,1fr)}.card{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:23px 25px}.card p{font-size:13px;color:var(--muted);margin:10px 0 0}.card ul{font-size:13px;color:var(--muted)}.card .tag{font-size:10px;color:var(--gold);letter-spacing:1px;display:block;margin-bottom:10px}.card.green{background:var(--soft)}.card.warm{background:#f7f0df}.card h3+.fine{margin-top:10px}.fine{color:var(--muted);font-size:12px;line-height:1.85}.fine:last-child{margin-bottom:0}.diagram{background:#eef2e5;padding:30px;border-radius:20px;border:1px solid var(--line)}.hardware{display:grid;grid-template-columns:1fr 42px 1.2fr 42px 1fr;align-items:center;gap:7px}.hardware-side{display:grid;gap:12px}.device{border:1px solid #d7e0cb;border-radius:15px;background:#fffef9;padding:17px 14px;text-align:center;font-size:13px}.device b{display:block;font-size:15px;margin:5px 0}.device small{display:block;font-size:11px;color:#839070}.device.computer{background:#6b8150;color:white;padding:26px 15px;border:0}.device.computer small{color:#e2ebd4}.device-icon{font-size:25px;line-height:1.3}.arrow{text-align:center;color:#95a97e;font-size:23px}.diagram-caption{font-size:12px;color:#72835c;margin:22px 0 0;text-align:center}.step{position:relative;padding-left:51px;margin-top:27px}.step-number{position:absolute;left:0;top:0;width:32px;height:32px;display:grid;place-items:center;background:#e4eccf;border-radius:50%;color:#6e834f;font-size:13px;font-weight:650}.step p{font-size:14px;color:var(--muted);margin:9px 0 0}.step ul{font-size:13px;color:var(--muted)}.step+.step{padding-top:4px}.step+.step .step-number{top:4px}.callout{border-left:3px solid #9caf7b;margin:19px 0 0;padding:12px 17px;background:#eff3e8;font-size:13px;color:#71805e;border-radius:0 10px 10px 0}.callout.warm{border-color:#c6a56c;background:#f7f0df;color:#8d7959}.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:15px;background:var(--paper)}table{border-collapse:collapse;width:100%;font-size:13px}th{text-align:left;background:#edf2e5;font-weight:550;color:#6e8059}th,td{padding:14px 18px;border-bottom:1px solid var(--line);vertical-align:top}tr:last-child td{border-bottom:0}td{color:var(--muted)}td:first-child{color:var(--ink);white-space:nowrap}td p{margin:0}td code{font-size:11px}.flow{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:23px 0}.flow div{position:relative;background:var(--paper);padding:19px 14px;border:1px solid var(--line);border-radius:14px}.flow div+div:before{content:"→";position:absolute;left:-12px;top:30px;color:#90a374;background:var(--bg);font-size:13px;z-index:1}.flow small{font-size:10px;color:#99a787;display:block;margin-bottom:8px}.flow b{font-size:13px;display:block}.flow span{font-size:11px;color:var(--muted);display:block;margin-top:6px;line-height:1.8}.phrase{font-size:24px;color:var(--leaf);letter-spacing:2px;padding:20px 0 14px}.checklist{list-style:none;padding:0;margin:20px 0 0;display:grid;gap:14px}.checklist li{position:relative;padding-left:30px;font-size:14px;color:var(--muted);margin:0}.checklist li:before{content:"";width:15px;height:15px;border:1.5px solid #a9b88f;border-radius:4px;position:absolute;left:0;top:6px}.faq{border-top:1px solid var(--line);padding:19px 0 0;margin-top:19px}.faq p{font-size:13px;color:var(--muted);margin:9px 0 0}.link-list{display:flex;gap:12px 25px;flex-wrap:wrap;font-size:12px}.footer{padding:30px 0 42px;display:flex;justify-content:space-between;gap:20px;color:#98a187;font-size:11px}.print-note{display:none}
+    @media(max-width:760px){:root{font-size:14px}.shell{padding:0 21px}.topbar{padding:17px 0}.top-actions .back{display:none}.brand{font-size:17px}.hero{padding:37px 0 28px}.hero h1{font-size:31px}.lead{font-size:14px}.hero-tags span{font-size:10px}.intro-note{font-size:12px;padding:17px 19px;margin-bottom:19px}.toc{gap:10px 18px;font-size:11px}.section{padding:31px 0}.section-head{gap:12px;margin-bottom:18px}h2{font-size:21px}.section-no{font-size:22px}.section-intro{font-size:13px}.grid.two,.grid.three{grid-template-columns:1fr}.card{padding:20px}.hardware{grid-template-columns:1fr;gap:8px}.hardware-side{grid-template-columns:1fr 1fr;gap:8px}.arrow{transform:rotate(90deg);font-size:20px;line-height:1}.device.computer{padding:17px}.diagram{padding:19px}.device{padding:13px 9px}.device b{font-size:13px}.diagram-caption{margin-top:17px;font-size:11px}.step{padding-left:41px}.step-number{width:28px;height:28px}.step p{font-size:13px}pre{padding:16px;font-size:10px}.flow{grid-template-columns:1fr;gap:9px}.flow div{padding:13px 17px;display:grid;grid-template-columns:44px 95px 1fr;gap:7px;align-items:center}.flow div+div:before{content:"↓";top:-14px;left:26px}.flow small,.flow span{margin:0}.flow b{font-size:12px}.flow span{font-size:11px}th,td{padding:12px;font-size:11px}.footer{font-size:10px}.phrase{font-size:22px}}
+    @media print{@page{size:A4;margin:17mm 16mm}:root{font-size:10pt;line-height:1.65;--bg:#fff;--paper:#fff;--muted:#545e4d;--line:#d7dccf}body{background:#fff}.shell{max-width:none;padding:0}.topbar{padding:0 0 13px}.top-actions,.toc{display:none}.brand{font-size:15pt}.brand img{width:27px;height:27px}.hero{padding:25px 0 19px}.hero h1{font-size:26pt}.eyebrow{font-size:8pt}.lead{font-size:11pt;margin-top:12px}.hero-tags{margin-top:15px}.hero-tags span{font-size:8pt}.intro-note{margin-bottom:10px;padding:13px 16px;font-size:9pt}.section{padding:23px 0;break-inside:auto}.section-head{margin-bottom:14px}h2{font-size:17pt}h3{font-size:11pt}.section-no{font-size:18pt}.section-intro,.step p{font-size:10pt}.card,.diagram,.table-wrap,.step,.flow,.faq,.callout{break-inside:avoid}.card{padding:16px}.card p,.card ul,.step ul,.callout,.faq p{font-size:9pt}.fine{font-size:8pt}.diagram{padding:19px}.diagram-caption{font-size:9pt}.device b{font-size:11pt}.device small{font-size:8pt}.step{padding-left:40px;margin-top:20px}.step-number{width:26px;height:26px;font-size:10pt}pre{background:#f3f5ef;color:#35402f;border:1px solid #d7dccf;font-size:8pt;padding:14px}code{font-size:8pt}table{font-size:9pt}th,td{padding:10px 12px}.flow div{padding:13px 10px}.flow b{font-size:9pt}.flow span{font-size:8pt}.flow small{font-size:7pt}.checklist li{font-size:10pt}.link-list{font-size:8pt}.footer{font-size:8pt;padding:20px 0 0}.print-note{display:block;font-size:8pt;color:#7a826e}.footer a{display:none}a{text-decoration:none;color:inherit}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <a class="brand" href="./"><img src="icon.svg" alt="">芽团<span style="font-size:11px;font-weight:400;letter-spacing:0;color:#8b967a">连接指南</span></a>
+      <div class="top-actions"><a class="pill-button back" href="./">回到陪伴小屋</a><button class="pill-button" type="button" onclick="window.print()">打印 / 保存为 PDF</button></div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <span class="eyebrow">YATUAN · FROM SCREEN TO TABLE</span>
+        <h1>让芽团，<br><span>真正陪你坐在餐桌旁。</span></h1>
+        <p class="lead">一台电脑、一根投影线、一个 USB 摄像头。把文字、声音和盘子里的画面接起来，让芽团听见你、看看这一餐，再把回应与动作投到桌面上。</p>
+        <div class="hero-tags"><span>电脑本地运行</span><span>语音唤醒</span><span>定时看餐盘</span><span>投影同步</span></div>
+      </section>
+
+      <div class="intro-note"><strong>你已有的 DeepSeek API 可以接入这条链路。</strong> 以下采用支持图片输入的 <code>deepseek-flash</code>；密钥只需在你自己的电脑上填写。本文说明配置和验证方法，账户权限、真实餐盘识别、摄像头和麦克风仍需完成下方现场验收。36 秒成长演示是单独的演示功能。</div>
+
+      <nav class="toc" aria-label="指南目录">
+        <a href="#prepare">01 准备什么</a><a href="#connect">02 接线与启动</a><a href="#voice">03 怎样唤醒</a><a href="#camera">04 怎样观察</a><a href="#verify">05 现场验收</a><a href="#animation">06 动作素材</a><a href="#trouble">07 常见问题</a>
+      </nav>
+
+      <section class="section" id="prepare">
+        <div class="section-head"><span class="section-no">01</span><h2>先准备这三样</h2></div>
+        <div class="grid three">
+          <article class="card"><span class="tag">HARDWARE</span><h3>电脑与外接设备</h3><p>电脑、HDMI 或 USB-C 投影连接线、投影仪、USB 摄像头。麦克风可用电脑自带或外接设备；声音从电脑或指定扬声器播放。</p></article>
+          <article class="card"><span class="tag">AI SERVICE</span><h3>DeepSeek 视觉模型</h3><p>使用 <code>deepseek-flash</code> 接收文字和摄像头图片，再返回回复。接口采用兼容 OpenAI 的 Chat Completions 格式；账户可用性以实际请求为准。</p></article>
+          <article class="card"><span class="tag">BROWSER</span><h3>一个桌面浏览器</h3><p>需要摄像头、麦克风权限，以及可用的中文语音识别和朗读。内嵌浏览器若不支持语音，请改用支持 Web Speech 的桌面浏览器。</p></article>
+        </div>
+        <div class="callout">这版声音链路是“浏览器听写 → AI 理解文字和图片 → 浏览器朗读”。因此，AI 服务需要<strong>视觉能力</strong>，不必同时提供原生语音通话接口。</div>
+        <div class="table-wrap" style="margin-top:21px">
+          <table><thead><tr><th>需要确认</th><th>你需要填写什么</th><th>放在哪里</th></tr></thead><tbody>
+            <tr><td>接口地址</td><td><code>https://api.deepseek.com/chat/completions</code></td><td>电脑项目的 <code>.env</code></td></tr>
+            <tr><td>模型名称</td><td><code>deepseek-flash</code></td><td>电脑项目的 <code>.env</code></td></tr>
+            <tr><td>API Key</td><td>已开通权限和额度的密钥</td><td>只填本机 <code>.env</code>，不要发到聊天或网页设置中</td></tr>
+          </tbody></table>
+        </div>
+        <p class="fine" style="margin-top:13px">以上模型与接口依据 <a href="https://api-docs.deepseek.com/guides/vision/" target="_blank" rel="noreferrer">DeepSeek 官方视觉文档</a>，于 2026 年 10 月 17 日核对。换服务商时可调整地址与模型名，但需确认视觉格式兼容；密钥始终由你在电脑上填写。</p>
+      </section>
+
+      <section class="section" id="connect">
+        <div class="section-head"><span class="section-no">02</span><h2>从接线到第一次开口</h2></div>
+        <div class="diagram" role="img" aria-label="USB 摄像头与麦克风输入电脑，电脑通过 HDMI 或 USB-C 输出到投影仪，通过扬声器播放语音；电脑联网请求多模态 AI">
+          <div class="hardware">
+            <div class="hardware-side"><div class="device"><span class="device-icon">▣</span><b>USB 摄像头</b><small>镜头朝向真实餐盘</small></div><div class="device"><span class="device-icon">♩</span><b>麦克风</b><small>采集你说的话</small></div></div>
+            <div class="arrow">→</div>
+            <div class="device computer"><span class="device-icon">▱</span><b>你的电脑</b><small>本地网页 + AI 代理<br>联网请求多模态模型<br>同步形象、气泡与成长</small></div>
+            <div class="arrow">→</div>
+            <div class="hardware-side"><div class="device"><span class="device-icon">◇</span><b>投影仪</b><small>HDMI / USB-C 显示画面</small></div><div class="device"><span class="device-icon">♪</span><b>扬声器</b><small>播放芽团的回应</small></div></div>
+          </div>
+          <p class="diagram-caption">投影仪负责显示；摄像头、麦克风、AI 请求和语音播放，都由电脑上的浏览器发起。</p>
+        </div>
+
+        <article class="step"><span class="step-number">1</span><h3>把投影设为“扩展显示器”</h3><p>投影仪连电脑，USB 摄像头也插电脑。系统显示设置选择“扩展”，电脑屏幕留作控制台，投影屏只显示黑底芽团。音频输出选电脑扬声器或你实际连接的音箱。</p><p>将摄像头固定在餐桌上方或斜上方，确认盘子在镜头内。<strong>拍的是物理餐盘，不是投影画面或网页截图。</strong> 尽量把芽团投在盘子旁边，避开摄像头主要观察区。</p></article>
+
+        <article class="step"><span class="step-number">2</span><h3>在本机填写 AI 配置</h3><p>在项目根目录创建或编辑 <code>.env</code>，与 <code>package.json</code> 放在同一层。使用 DeepSeek 时保留下面的接口和模型，只把最后一行替换成你的密钥：</p>
+          <pre><code>YATUAN_AI_ENDPOINT=https://api.deepseek.com/chat/completions
+YATUAN_AI_MODEL=deepseek-flash
+YATUAN_AI_KEY=在本机填写你的密钥</code></pre>
+          <p class="fine">密钥由本地代理服务保管。修改 <code>.env</code> 后，需停止并重新启动服务。不要把这个文件拖入聊天、上传到站点或提交到 Git。</p>
+        </article>
+
+        <article class="step"><span class="step-number">3</span><h3>启动本地网页与代理</h3><p>安装好 Node.js 后，在终端进入项目目录，启动服务：</p>
+          <pre><code>cd bySide/yatuan-companion
+npm run dev</code></pre>
+          <p>浏览器打开 <a href="http://127.0.0.1:4173">http://127.0.0.1:4173</a>。保持终端运行；停止服务会让后续 AI 请求无法完成。<code>.env</code> 不放在网页素材目录内。</p>
+        </article>
+
+        <article class="step"><span class="step-number">4</span><h3>确认接口可用，再打开投影</h3><p>网页 AI 设置中的接口地址填 <code>/api/chat/completions</code>，模型可填 <code>deepseek-flash</code>。这是网页请求本机代理的地址，与 <code>.env</code> 里的 DeepSeek 地址用途不同。执行连接检查后，先发送一句普通聊天，再让芽团看一张实际餐盘照片，分别确认文字和图片请求都可用。</p><p>从控制台打开“桌面投影”，将这个窗口拖到投影屏，再进入全屏。两个窗口必须使用<strong>同一个浏览器、同一个地址来源</strong>；例如都从 <code>http://127.0.0.1:4173</code> 打开。</p>
+          <div class="callout"><code>localhost</code> 和 <code>127.0.0.1</code> 不是同一个网页来源。不要一个窗口用前者、另一个用后者，也不要把本地控制台与已发布云端投影混用。</div>
+        </article>
+
+        <article class="step"><span class="step-number">5</span><h3>在“桌边实时陪伴”中点击“开始陪伴”</h3><p>按浏览器提示允许麦克风与摄像头，选择外接 USB 摄像头。开始时会短暂请求摄像头授权后关闭，唤醒后才重新开启、采集和发送图片。唤醒后在预览中检查方向和餐盘位置；麦克风使用浏览器默认输入设备，可在系统设置中调整。</p><p>只在投影页启动这一轮声音与视觉会话。控制台负责查看状态和配置，避免另一个页面同时采集、朗读，导致重复回答。</p></article>
+
+        <article class="step"><span class="step-number">6</span><h3>说“芽团芽团”，开始真实陪伴</h3><p>等界面进入等待唤醒状态，清楚地说出唤醒词，再说想聊的话，例如：“芽团芽团，看看我今天吃了什么？” 芽团会开始观察、请求 AI，并将回应、动作和状态同步到投影与控制台。</p><p class="fine">第一次启动必须点击页面并授权。网页关闭、电脑休眠、麦克风权限被撤销后，语音唤醒不会在后台继续工作。</p></article>
+      </section>
+
+      <section class="section" id="voice">
+        <div class="section-head"><span class="section-no">03</span><h2>之后，就用声音找它</h2></div>
+        <div class="grid two">
+          <article class="card green"><h3>先唤醒，再交流</h3><div class="phrase">“芽团芽团”</div><p>唤醒后可以聊心情、说偏好，或问盘子里的食物。识别到的文字和芽团的回答会显示出来，方便现场确认它有没有听对。</p></article>
+          <article class="card"><h3>唤醒没有响应时</h3><p>点击“唤醒芽团”，或输入文字继续交流。检查麦克风权限、系统输入音量和语音识别支持；中文听写可能依赖浏览器供应商的联网服务。</p></article>
+        </div>
+        <div class="flow" aria-label="声音交互流程">
+          <div><small>01</small><b>听见唤醒词</b><span>已开启的网页接收听写结果</span></div>
+          <div><small>02</small><b>理解你的话</b><span>识别成文字，结合记忆</span></div>
+          <div><small>03</small><b>看看餐盘</b><span>需要时附上一张摄像头画面</span></div>
+          <div><small>04</small><b>AI 给出回应</b><span>更新气泡、情绪与状态</span></div>
+          <div><small>05</small><b>开口回答</b><span>朗读结束后继续听你说</span></div>
+        </div>
+        <p class="fine">为避免芽团把自己的声音当成你的话，朗读时会暂停听写，结束后再恢复。这一版没有“边说边被你打断”的全双工通话能力，也不是独立、离线常驻的唤醒词引擎。</p>
+      </section>
+
+      <section class="section" id="camera">
+        <div class="section-head"><span class="section-no">04</span><h2>观察餐盘，回应有变化的日常</h2></div>
+        <p class="section-intro">摄像头开启后，预览是连续的；发给 AI 的是一张张定时快照，不是连续视频。</p>
+        <div class="grid three">
+          <article class="card"><span class="tag">INTERVAL</span><h3>间隔 5 / 10 / 15 秒再看</h3><p>默认 10 秒，可自行调整。上一轮请求和朗读都结束后，再等待这个间隔拍下一张；并非固定帧率，也不保证每 10 秒就有一次回复。</p></article>
+          <article class="card"><span class="tag">ONE AT A TIME</span><h3>图片请求按顺序处理</h3><p>上一轮没结束时不堆积图片。观察开启期间，即使画面相同也仍会定时发送快照；较短间隔会增加请求量和服务费用。</p></article>
+          <article class="card"><span class="tag">GENTLE FEEDBACK</span><h3>有新发现再开口</h3><p>模型判断没有需要说的新变化时保持安静；相同回复不重复播报，自动播报至少间隔 18 秒。主动提问会得到回应。</p></article>
+        </div>
+        <div class="table-wrap" style="margin-top:21px">
+          <table><thead><tr><th>你执行的操作</th><th>之后会发生什么</th></tr></thead><tbody>
+            <tr><td>开始陪伴</td><td>启动所需权限与语音会话，等待唤醒后进入观察。</td></tr>
+            <tr><td>暂停观察</td><td>停止定时拍摄并释放摄像头；文字聊天仍可使用。</td></tr>
+            <tr><td>继续观察</td><td>重新开启摄像头，恢复观察流程；权限变化时可能再次提示。</td></tr>
+            <tr><td>结束陪伴</td><td>停止摄像头、麦克风听写、语音播放与当前会话请求。</td></tr>
+          </tbody></table>
+        </div>
+        <div class="callout warm">食物照片可以辅助描述看得见的食材和搭配，但不能可靠确定油盐量、过敏原、精确热量或诊断健康问题。芽团会保留不确定性；你可以直接告诉它“这不是鸡肉，是豆腐”来纠正。</div>
+        <p class="fine" style="margin-top:16px">观察期间的快照会经本地代理发给你配置的 AI 服务；语音听写可能由浏览器供应商处理。点击“结束陪伴”后停止本次采集。成长是陪伴反馈，不是医学评分：有效餐盘观察最多每 20 分钟增加 3 点成长、2 点活力；主动对话最多每分钟增加 1 点成长、1 点亲密，不会每帧刷成长。</p>
+        <div class="callout">连续 3 次 AI 请求或结果格式错误会暂停采集。语音识别启动超时或连续失败时，会显示具体原因并暂停正在进行的自动采集。按钮和文字仍然可用；点击“唤醒芽团”可手动恢复观察。要恢复语音，请检查 Chrome 的麦克风权限、系统输入设备和网络，然后结束陪伴并重新开始。DeepSeek 文字连接成功不代表浏览器语音服务已连接。</div>
+      </section>
+
+      <section class="section" id="verify">
+        <div class="section-head"><span class="section-no">05</span><h2>第一次演示前，做一轮现场验收</h2></div>
+        <p class="section-intro">先结束 36 秒示例演示，再检查真实链路。用你自己的餐盘，按下面顺序操作。</p>
+        <div class="card">
+          <ul class="checklist">
+            <li><strong>连通：</strong>AI 连接检查通过；发送“你好，芽团”，收到该服务的真实回复。</li>
+            <li><strong>看得见：</strong>预览里能看到 USB 摄像头拍到的真实餐盘；让芽团描述食物，再核对是否准确。</li>
+            <li><strong>听得见：</strong>说“芽团芽团”，唤醒状态有变化；再说一句话，屏幕显示正确的听写文字。</li>
+            <li><strong>说得出：</strong>芽团有声音回复；播放自己的声音时没有再次触发一轮自问自答。</li>
+            <li><strong>能回应变化：</strong>移动或更换一道可见食物，等待下一轮有效采样；观察是否给出新的、有依据的反馈。</li>
+            <li><strong>能同步：</strong>电脑控制台和黑底投影同时更新气泡与角色状态；成长变化来自实际保存的互动结果。</li>
+            <li><strong>能停下：</strong>点“暂停观察”后摄像头停止；点“结束陪伴”后没有继续拍照、听写和后台请求。</li>
+          </ul>
+        </div>
+        <p class="fine" style="margin-top:15px">连接检查成功只代表当前检查的请求可达，不等于所有硬件与视觉能力都已验证。食物识别、声音和投影需分别按上面的步骤实测。</p>
+      </section>
+
+      <section class="section" id="animation">
+        <div class="section-head"><span class="section-no">06</span><h2>你之后给的 GIF，可以直接换成动作素材</h2></div>
+        <p class="section-intro">你可以用 Seedance 制作，再提供导出的文件。播放这些素材不需要接 Seedance API；动作由芽团当下的交互状态切换。</p>
+        <div class="table-wrap">
+          <table><thead><tr><th>素材名称</th><th>对应状态</th><th>动作建议</th></tr></thead><tbody>
+            <tr><td><code>idle</code></td><td>待机</td><td>轻轻呼吸、眨眼、小幅摇叶子，适合循环</td></tr>
+            <tr><td><code>listening</code></td><td>倾听</td><td>抬头、侧耳、叶子微微竖起</td></tr>
+            <tr><td><code>thinking</code></td><td>等待 AI 回复</td><td>歪头、托腮、看向餐盘</td></tr>
+            <tr><td><code>speaking</code></td><td>语音回答</td><td>自然摆手、轻微嘴部动作；此版不承诺逐字口型同步</td></tr>
+            <tr><td><code>happy</code></td><td>开心反馈</td><td>轻跳、挥手、花朵摆动</td></tr>
+            <tr><td><code>eating</code></td><td>用餐互动</td><td>捧碗、点头、邀请一起慢慢吃</td></tr>
+            <tr><td><code>sleeping</code></td><td>休息</td><td>闭眼、蜷缩、缓慢呼吸</td></tr>
+          </tbody></table>
+        </div>
+        <div class="grid two" style="margin-top:17px">
+          <article class="card green"><h3>保持同一套构图</h3><p>每个动作用相同画布尺寸、朝向、角色比例和脚下落点，四周留出花朵和手脚活动空间。尽量做 2–5 秒可循环动作，画面里不要烧入字幕、对话气泡和状态条。</p></article>
+          <article class="card"><h3>透明背景更方便</h3><p>GIF 可以用，但它的透明边缘和色彩有限。若制作工具支持，透明 WebM 或 PNG 序列更适合柔软的毛绒轮廓。黑底素材适合投影，放在小屋里会显示黑色矩形。</p></article>
+        </div>
+        <p class="fine" style="margin-top:14px">交付时注明角色名、动作名、是否循环、背景是否透明。成长若已经画进素材，可按“萌芽 / 花苞 / 单花 / 多花”各交一套；若希望网页继续叠加花朵，给头顶留出一致位置。当前占位动作在收到素材前继续保留，不会把静态文件称作已生成的新动作。</p>
+        <p class="fine">项目已留有素材映射入口：文件放在 <code>dist/assets/motions/</code>，在 <code>dist/animations.js</code> 中按角色与动作关联。你直接提供素材文件即可，后续可由我替换；尚未配置的动作继续显示原形象。</p>
+      </section>
+
+      <section class="section" id="trouble">
+        <div class="section-head"><span class="section-no">07</span><h2>现场常见问题</h2></div>
+        <article class="faq" style="border-top:0;padding-top:0;margin-top:0"><h3>原来那个在线网址，能不能直接用？</h3><p>在线页面是静态站点。要从它调用真实 AI，需要你可用的 HTTPS 代理服务；本机 <code>.env</code> 只供本地 Node 服务使用，不会自动连到线上网页。这次电脑接投影的场景，直接让控制台和投影都运行在本机地址即可。</p></article>
+        <article class="faq"><h3>手机能不能同时控制电脑投影？</h3><p>当前实时同步适用于同一电脑、同一浏览器、同一来源的多个窗口。手机和电脑是两台设备，尚未接跨设备同步服务；手机版界面仍可使用，但不能因此认定手机已经与电脑投影实时互联。</p></article>
+        <article class="faq"><h3>摄像头列表里没有外接设备，或者拍到的是电脑前置？</h3><p>先接好 USB 摄像头，检查系统和浏览器摄像头权限，关掉正在独占摄像头的会议应用，再重新进入选择。第一次授权前，设备名称可能不可见。以预览中的实际画面为准。</p></article>
+        <article class="faq"><h3>麦克风有权限，但说话没反应？</h3><p>检查系统默认输入设备和麦克风电平；确认页面仍开着且已经点过“开始陪伴”。如果浏览器不支持中文听写，或供应商语音服务无法连接，使用手动唤醒和文字输入，先单独验证视觉链路。</p></article>
+        <article class="faq"><h3>能聊天，但图片请求失败？</h3><p>检查模型是否真的支持图片输入，接口是否接受 Chat Completions 的 <code>image_url</code> 内容项，账户是否有对应模型权限。接口地址、密钥错误、余额不足和网络超时需要分别根据错误提示处理。</p></article>
+        <article class="faq"><h3>投影没同步，或者同一句话被说了两遍？</h3><p>确认两个窗口地址都以 <code>http://127.0.0.1:4173</code> 开头，且属于同一个浏览器的普通窗口。结束多余页面的陪伴会话，只保留投影页采集与朗读。浏览器隐私窗口不与普通窗口共享同一份状态。</p></article>
+        <article class="faq"><h3>芽团看错了食物，或者很久没有新建议？</h3><p>先检查取景、光线、遮挡和画面变化。系统会避免重复播报，但不会因此停止发送观察快照；你可以直接问“再帮我看看”，或口头纠正食材。也请检查是否已因连续错误而暂停。模型仍可能认错，不能把画面推断当成精确检测。</p></article>
+      </section>
+
+      <section class="section" style="padding-top:28px;padding-bottom:28px">
+        <p class="fine" style="margin-bottom:13px">接口与浏览器能力参考</p>
+        <div class="link-list"><a href="https://api-docs.deepseek.com/guides/vision/" target="_blank" rel="noreferrer">DeepSeek · 视觉模型与图片输入</a><a href="https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia" target="_blank" rel="noreferrer">MDN · 摄像头与麦克风权限</a><a href="https://developer.mozilla.org/en-US/docs/Web/API/SpeechRecognition" target="_blank" rel="noreferrer">MDN · 浏览器语音识别</a><a href="https://platform.openai.com/docs/guides/images-vision" target="_blank" rel="noreferrer">OpenAI · 图片输入格式</a></div>
+        <p class="print-note">参考地址：api-docs.deepseek.com/guides/vision/ · developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia · developer.mozilla.org/en-US/docs/Web/API/SpeechRecognition · platform.openai.com/docs/guides/images-vision</p>
+      </section>
+    </main>
+    <footer class="footer"><span>芽团 · 真实陪伴连接指南<br>2026 年 10 月 17 日 · 本机投影方案</span><a href="#">回到顶部 ↑</a></footer>
+  </div>
+</body>
+</html>

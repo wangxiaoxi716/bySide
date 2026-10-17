@@ -1,0 +1,8 @@
+node_modules/
+.DS_Store
+*.tar.gz
+test-results/
+.env
+.env.*
+!.env.example
+previews/
