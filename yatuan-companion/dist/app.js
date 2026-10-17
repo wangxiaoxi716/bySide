@@ -1,56 +1,694 @@
 import {mountLiveUI} from './live-ui.js';
 import {discoverLocalAI} from './live.js';
-import {getState,subscribe,updateState,sendChat,setCharacter,setMood,saveMeal,addMemory,deleteMemory,setGrowth,resetData,extractMemory} from './state.js';
-import {startCamera,stopCamera,captureFrame,readImageFile,startListening,cancelListening,supportsSpeechRecognition,speakAsync,stopSpeaking} from './media.js';
-import {getAIConfig,saveAIConfig,clearAIConfig,requestAI,isAIConfigured} from './ai.js';
-import {DEMO_STEPS,getDemoState,subscribeDemo,startDemo,pauseDemo,resumeDemo,stopDemo,goToStep,isDemoOwner} from './demo.js';
-import {icon,esc,characterArt,characterName,stages} from './stage.js';
+import {
+    getState,
+    subscribe,
+    updateState,
+    sendChat,
+    setCharacter,
+    setMood,
+    saveMeal,
+    addMemory,
+    deleteMemory,
+    setGrowth,
+    resetData,
+    extractMemory
+} from './state.js';
+import {
+    startCamera,
+    stopCamera,
+    captureFrame,
+    readImageFile,
+    startListening,
+    cancelListening,
+    supportsSpeechRecognition,
+    speakAsync,
+    stopSpeaking
+} from './media.js';
+import {getAIConfig, saveAIConfig, clearAIConfig, requestAI, isAIConfigured} from './ai.js';
+import {
+    DEMO_STEPS,
+    getDemoState,
+    subscribeDemo,
+    startDemo,
+    pauseDemo,
+    resumeDemo,
+    stopDemo,
+    goToStep,
+    isDemoOwner
+} from './demo.js';
+import {icon, esc, characterArt, characterName, stages} from './stage.js';
 
-const app=document.querySelector('#app'),modal=document.querySelector('#modal'),modalContent=document.querySelector('#modal-content');
-const nav=[['home','home','陪伴小屋'],['chess','spark','棋盘小搭子'],['meals','bowl','一起吃饭'],['growth','sprout','成长花园'],['memories','book','我们的回忆'],['activities','spark','更多陪伴']];
+const app = document.querySelector('#app'), modal = document.querySelector('#modal'),
+    modalContent = document.querySelector('#modal-content');
+const nav = [['home', 'home', '陪伴小屋'], ['chess', 'spark', '棋盘小搭子'], ['meals', 'bowl', '一起吃饭'], ['growth', 'sprout', '成长花园'], ['memories', 'book', '我们的回忆'], ['activities', 'spark', '更多陪伴']];
 let liveUI;
-let view=location.hash.slice(1)||'home',pending=false,listening=false,stopListening=null,picture=null,pictureSource='手动确认',toastTimer,requestAbort,analysisAbort,requestEpoch=0,modalEpoch=0;
-const moodNames={happy:'开心',curious:'好奇',sleepy:'休息',eating:'用餐',listening:'倾听'};
-const uid=()=>crypto.randomUUID?.()||String(Date.now());
-const date=(at)=>new Intl.DateTimeFormat('zh-CN',{month:'long',day:'numeric'}).format(at);
-const btn=(action,label,cls='secondary',ico='',attrs='')=>`<button type="button" class="btn ${cls}" data-action="${action}" ${attrs}>${ico?icon(ico):''}${label}</button>`;
-function toast(message){const el=document.querySelector('#toast');el.textContent=message;el.classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('visible'),4000);}
-function shell(){app.innerHTML=`<aside class="sidebar"><a href="#home" class="brand"><img src="icon.svg" alt=""><span>芽团<small>桌边的陪伴</small></span></a><div class="nav-caption">一起过日子</div><nav>${nav.map(([id,ic,title])=>`<a href="#${id}" data-nav="${id}">${icon(ic)}<span>${title}</span>${id==='activities'?'<span class="nav-dot"></span>':''}</a>`).join('')}</nav><div class="sidebar-note"><span class="little-leaves">${icon('sprout',32)}</span><p>把一起度过的日子，<br>慢慢长出来。</p><small>YOUR LITTLE EVERYDAY</small></div><div class="sidebar-bottom"><button data-action="characters">${icon('image')}<span>我的伙伴</span>${icon('chevron',16)}</button><button data-action="settings">${icon('settings')}<span>偏好与设置</span></button></div></aside><div class="workspace"><header class="topbar"><a class="mobile-brand" href="#home"><img src="icon.svg" alt="">芽团</a><div class="breadcrumb">我的陪伴空间<span>/</span><b id="page-label">陪伴小屋</b></div><div class="top-actions"><button class="mode-badge" data-action="settings"><span></span><span id="mode-label">本地体验</span></button>${btn('live','开始陪伴','live-top secondary','mic')}${btn('projection','棋局投影','dark','projector')}<button class="avatar-button" data-action="characters" aria-label="切换伙伴形象"><img src="icon.svg" alt="我的伙伴"></button></div></header><main id="main"></main><footer class="site-footer"><span>一张桌子，两份陪伴。</span><button data-action="capabilities">关于此体验 ${icon('chevron',13)}</button></footer></div><nav class="mobile-nav">${nav.map(([id,ic,title])=>`<a href="#${id}" data-nav="${id}">${icon(ic)}<span>${title.replace('陪伴小屋','小屋').replace('棋盘小搭子','下棋').replace('一起吃饭','饮食').replace('成长花园','成长').replace('我们的回忆','回忆').replace('更多陪伴','更多')}</span></a>`).join('')}</nav><input id="character-upload" class="visually-hidden" type="file" accept="image/png,image/jpeg,image/webp,image/gif"><input id="meal-upload" class="visually-hidden" type="file" accept="image/png,image/jpeg,image/webp,image/gif">`;}
-function header(title,description,extra=''){return `<section class="page-heading"><div><div class="eyebrow">${icon('sun',16)} ${date(Date.now())} · 小小日常，正在发生</div><h1>${title}</h1><p>${description}</p></div>${extra}</section>`;}
-function statBars(s){return `<div class="stats"><div class="stat green"><div>${icon('leaf')}<span>今日活力</span><strong>${s.energy}<small>/100</small></strong></div><div class="track"><i style="width:${s.energy}%"></i></div></div><div class="stat pink"><div>${icon('heart')}<span>亲密度</span><strong>${s.intimacy}<small>/100</small></strong></div><div class="track"><i style="width:${s.intimacy}%"></i></div></div><div class="stat amber"><div>${icon('sprout')}<span>成长进度</span><strong>${s.growth}<small>/100</small></strong></div><div class="track"><i style="width:${s.growth}%"></i></div></div></div>`;}
-function scene(s){return `<section class="scene-card ${s.activity==='用餐'?'is-meal':''}"><div class="scene-forest"><svg viewBox="445 196 754 142" preserveAspectRatio="none" aria-hidden="true"><image href="assets/design-reference.png" width="1536" height="1024"/></svg></div><div class="scene-ground"></div><div class="scene-top"><span class="scene-tag">${icon('home',15)} 森林里的小家</span><button class="scene-icon" data-action="sound" aria-label="${s.sound?'关闭':'开启'}语音朗读">${icon(s.sound?'volume':'moon',19)}</button></div><div class="scene-hello"><span>${characterName(s)}在这里</span><small>今天也，很高兴见到你。</small></div><div class="scene-speech" aria-live="polite">${esc(s.speech)}</div><div class="scene-rug"></div><div class="hero-character">${characterArt(s)}</div><div class="floating-leaf leaf-one">${icon('leaf',24)}</div><div class="floating-leaf leaf-two">${icon('leaf',17)}</div>${s.activity==='用餐'&&!liveUI?.controller.getStatus().active?'<div class="scene-meal-card"><svg viewBox="1244 451 233 109" aria-hidden="true"><image href="assets/design-reference.png" width="1536" height="1024"/></svg><small>示例餐食 · 一起开饭</small></div>':''}<div class="scene-bottom"><span><i></i>${moodNames[s.mood]} · ${s.activity==='用餐'?'陪你吃饭':'陪在你身边'}</span><button data-action="characters">切换形象 ${icon('chevron',14)}</button></div></section>`;}
-function chatCard(s){return `<section class="card chat-card"><div class="card-heading"><div>${icon('chat')}<h2>聊一会儿</h2><span class="tiny-dot"></span></div><span class="subtle">${isAIConfigured()?'':'本地演示对话'}</span></div><div class="chat-messages" id="chat-messages" role="log" aria-label="与伙伴的对话">${s.chat.slice(-12).map(m=>`<div class="message ${m.role}">${m.role==='assistant'?'<img src="icon.svg" alt="">':''}<p>${esc(m.text)}</p></div>`).join('')}${pending?'<div class="typing"><i></i><i></i><i></i><span>正在想一想…</span></div>':''}</div><div class="chat-suggestions"><button data-action="quick-chat" data-text="今天有点累">今天有点累</button><button data-action="quick-chat" data-text="请记住，我喜欢热乎乎的晚饭">记住我的偏好</button><button data-action="test-tts" style="opacity:.55;font-size:11px;padding:4px 10px">🔊 测试TTS</button></div><form id="chat-form" class="chat-composer"><input id="chat-input" name="message" placeholder="和${characterName(s)}说点什么…" autocomplete="off" maxlength="1000" aria-label="聊天内容"><button type="button" class="icon-btn ${listening?'listening':''}" data-action="voice" aria-label="${listening?'停止语音输入':'开始语音输入'}">${icon('mic')}</button><button class="send-btn" type="submit" aria-label="发送消息" ${pending?'disabled':''}>${icon('send',18)}</button></form><div class="voice-caption" id="voice-caption">${listening?'正在听你说话…':'打字或语音，都可以慢慢说。'}</div></section>`;}
-function demoPanel(){const d=getDemoState();return `<section class="demo-panel" id="demo-panel"><div class="demo-heading"><div class="demo-emblem">${icon('play',19)}</div><div><h2>看见，陪伴，然后长大</h2><p>18 秒，体验芽团的第一次绽放</p></div><span class="demo-label">演示剧场</span></div><div class="demo-steps">${DEMO_STEPS.map((step,i)=>`<button data-action="demo-step" data-index="${i}" class="${d.index===i&&(d.running||d.done)?'active':''}"><i>${i+1}</i><span>${esc(step.title.replace(/演示/g,''))}</span></button>`).join('')}</div><div class="demo-progress"><i style="width:${d.progress*100}%"></i></div><div class="demo-footer"><span id="demo-status">${d.done?'第一朵花已经盛开':d.running?d.paused?'已暂停，可以随时和它聊天':DEMO_STEPS[d.index]?.description:'示例餐食与成长，可暂停、跳步、重播'}</span><div>${btn(d.running&&!d.paused?'demo-pause':'demo-play',d.running&&!d.paused?'暂停':d.paused?'继续演示':d.done?'再看一次':'开始演示','small '+(d.running?'secondary':'primary'),d.running&&!d.paused?'pause':'play')}${d.running||d.done?btn('demo-stop','结束','small ghost','reset'):''}</div></div></section>`;}
-function home(s){return `${header('今天，也一起慢慢长大。','不用赶路的时候，就在这里坐一会儿。',`<button class="companion-day" data-action="growth">${icon('sprout',25)}<span>相伴的第 <b>${Math.max(1,Math.floor((Date.now()-s.createdAt)/86400000)+1)}</b> 天<small>${stages[s.growthStage]}</small></span></button>`)}<div class="home-grid"><div class="home-left">${scene(s)}${demoPanel()}</div><aside class="home-right"><section class="card wellbeing-card"><div class="card-heading"><div><h2>小小的成长</h2></div><button class="text-btn" data-action="growth">去花园 ${icon('chevron',14)}</button></div>${statBars(s)}<div class="growth-caption">${icon('sprout',14)} 每一份陪伴，都被好好留下。</div></section>${chatCard(s)}</aside></div><section class="home-bottom"><div class="section-title"><h2>在桌边，还可以一起…</h2><a href="#activities">探索更多 ${icon('arrow',15)}</a></div><div class="activity-preview"><button data-action="meals" class="activity-tile meal"><span class="activity-illustration">${icon('bowl',34)}</span><div><strong>好好吃一顿饭</strong><small>小碗已经准备好啦</small></div>${icon('arrow',19)}</button><button data-action="coming-chess" class="activity-tile chess"><span class="activity-illustration chess-board"><i></i><i></i></span><div><strong>下一盘慢慢的棋</strong><small>和芽团一起下棋</small></div>${icon('arrow',19)}</button><button data-action="coming-craft" class="activity-tile craft"><span class="activity-illustration">${icon('spark',34)}</span><div><strong>做点有趣的小东西</strong><small>敬请期待</small></div><span class="soon-dot">SOON</span></button></div></section>`;}
-function meals(s){return `${header('每一顿，都值得好好吃。','一起看看盘子里的日常。记录由你确认，建议也由你选择。',btn('meal-modal','记录这一餐','primary','plus'))}<div class="meal-workspace"><section class="meal-invitation card"><div class="meal-visual"><div class="drawn-plate"><span>🥦</span><span>🍚</span><span>🥕</span></div></div><div><span class="eyebrow">坐下来，一起开饭</span><h2>今天，盘子里有什么？</h2><p>打开摄像头或上传餐食照片，也可以直接用语音告诉我。</p><div class="button-row">${btn('camera','打开摄像头','primary','camera')}${btn('upload-meal','上传照片','secondary','upload')}</div><button class="text-btn sample-link" data-action="sample-meal">${icon('play',15)} 先试试示例餐食</button></div></section><section class="card meal-tip"><span>${icon('sprout',31)}</span><h3>吃饭，也是相伴的时间。</h3><p>餐食照片会保存在当前浏览器。未连接视觉 AI 时，由你确认食物内容，我们一起留下这顿饭。</p><button class="text-btn" data-action="settings">查看连接状态 ${icon('arrow',14)}</button></section></div><div class="section-title"><h2>我的餐食日记 <small>${s.meals.length} 餐</small></h2><span class="subtle">一点一点，留住日常</span></div>${s.meals.length?`<div class="meal-records">${[...s.meals].reverse().map(m=>`<article class="card meal-record"><div class="meal-record-image">${m.image?`<img src="${esc(m.image)}" alt="你记录的餐食">`:'<span>🍚</span>'}<small>${esc(m.source)}</small></div><div><small>${date(m.at)}</small><h3>${esc(m.description||m.groups.join('、'))}</h3><div class="tags">${m.groups.map(g=>`<span>${esc(g)}</span>`).join('')}</div><p>${esc(m.advice)}</p></div></article>`).join('')}</div>`:empty('bowl','第一顿饭，从今天开始。','不需要完美的摆盘，普通的一餐也值得记录。',btn('meal-modal','记录这一餐','primary','plus'))}`;}
-function growth(s){return `${header('把日子，慢慢长成花。','两片叶，始终相伴。每一朵花，都有一个属于我们的来处。',btn('demo','演示成长过程','primary','play'))}<div class="growth-layout"><section class="card garden-stage"><div class="garden-orbit orbit-1"></div><div class="garden-orbit orbit-2"></div><span class="garden-current">${stages[s.growthStage]}</span><div class="garden-character">${characterArt(s)}</div><p>${s.growthStage===3?'重要的时刻，开成一朵小小的花。':'每一份认真生活，都在悄悄发芽。'}</p></section><section class="card garden-settings"><div class="card-heading"><h2>属于你的绽放</h2><span class="pill">外观预览</span></div><label class="field-label">成长阶段</label><div class="growth-stages">${stages.map((st,i)=>`<button data-action="growth-stage" data-stage="${i}" class="${s.growthStage===i?'selected':''}"><span>${['🌱','🌿','🌷','🌼'][i]}</span><b>${st.split(' · ')[1]}</b><small>${st.split(' · ')[0]}</small></button>`).join('')}</div><label class="field-label">花朵的颜色</label><div class="color-options">${[['cream','奶油黄','#f0cf77'],['pink','晨曦粉','#eeb1c0'],['blue','晴空蓝','#accddf']].map(([id,t,c])=>`<button data-action="flower-color" data-color="${id}" class="${s.flowerStyle===id?'selected':''}"><i style="background:${c}"></i>${t}</button>`).join('')}</div><label class="field-label">想开几朵花？</label><div class="segmented">${[1,2,3].map(n=>`<button data-action="flower-count" data-count="${n}" class="${s.flowerCount===n?'active':''}">${n} 朵</button>`).join('')}</div><p class="field-hint">此处可直接预览外观。日常成长和今天的心情分别记录，已经积累的陪伴会一直留下。</p></section></div>${demoPanel()}<section class="story-card"><span>${icon('sprout',40)}</span><div><h2>“是我们一起过的日子。”</h2><p>芽团是一颗还不知道自己会开什么花的小种子。它来到你的桌边，把你愿意留下的片刻收进叶脉里。一起吃的晚饭、完成的小手工、安静待着的下午……有一天，这些普通的日子，开出了第一朵花。</p></div></section>`;}
-function memories(s){return `${header('小事，也被好好记住。','你喜欢的口味、想留下的片刻，都可以慢慢告诉我。',btn('add-memory','留下一段回忆','primary','plus'))}<div class="memory-banner"><span>${icon('book',32)}</span><div><h2>我在慢慢了解你。</h2><p>试着说「请记住，我喜欢热乎乎的晚饭」。你也可以随时删除这里的记忆。</p></div><span class="memory-count">${s.memories.length}<small>份小小记忆</small></span></div>${s.memories.length?`<div class="memory-grid">${[...s.memories].reverse().map((m,i)=>`<article class="memory-note note-${i%3}"><div>${icon('heart',18)}<button class="icon-btn" data-action="delete-memory" data-id="${esc(m.id)}" aria-label="删除这条记忆">${icon('trash',16)}</button></div><p>${esc(m.text)}</p><small>${date(m.at)} · 好好收着</small></article>`).join('')}</div>`:empty('heart','还没有记忆，也没关系。','我们有很多日子，可以慢慢认识。',btn('focus-chat','从一句话开始','primary','chat'))}`;}
-function activities(){return `${header('在一起，做点小事情。','吃饭、下棋、做手工，或者什么都不做。陪伴有很多种样子。')}<div class="activities-grid"><article class="activity-big dining"><div class="activity-art"><span>🍵</span><i>🥣</i></div><span class="pill available">现在就可以</span><h2>一起吃饭</h2><p>看看今天的餐食，聊聊今天的心情。<br>我也把小碗准备好了。</p>${btn('meals','一起开饭','primary','arrow')}</article><article class="activity-big board-game"><div class="activity-art board-art"><i></i><b></b><span></span></div><span class="pill available">现在就可以</span><h2>棋盘上的小搭子</h2><p>认真做你的对手，也做你的陪练。<br>从一盘不着急的五子棋开始。</p>${btn('coming-chess','开始下棋','primary','arrow')}</article><article class="activity-big handcraft"><div class="activity-art craft-art"><span>✂</span><i>✿</i></div><span class="pill">敬请期待</span><h2>一起做点小手工</h2><p>把大作品拆成小步骤。<br>每一件完成的小事，都值得纪念。</p>${btn('coming-craft','看看未来怎么玩','secondary','arrow')}</article></div><section class="familiar-banner"><div><span class="eyebrow">熟悉的形象，温柔的陪伴</span><h2>也可以，换成你熟悉的模样。</h2><p>芽团、人物伙伴，或你自己上传的形象。聊天风格与回忆由你管理。</p>${btn('characters','选择我的伙伴','dark','image')}</div><div class="familiar-human">${characterArt({...getState(),character:'human',mood:'happy'})}</div></section>`;}
-function chess(){return `<div class="chess-embed"><iframe src="chess.html" title="棋盘小搭子" allowfullscreen></iframe></div>`;}
-function empty(ic,title,copy,action=''){return `<section class="empty-state"><span>${icon(ic,34)}</span><h3>${title}</h3><p>${copy}</p>${action}</section>`;}
-function render(){if(!nav.some(n=>n[0]===view))view='home';const s=getState();const input=document.querySelector('#chat-input'),draft=input?.value||'',focused=document.activeElement===input;document.querySelector('#main').innerHTML=({home,meals,growth,memories,activities,chess}[view])(s);document.querySelectorAll('[data-nav]').forEach(el=>el.classList.toggle('active',el.dataset.nav===view));document.querySelector('#page-label').textContent=nav.find(n=>n[0]===view)[2];document.querySelector('#mode-label').textContent='本地体验';const next=document.querySelector('#chat-input');if(next){next.value=draft;if(focused)next.focus({preventScroll:true});}const msgs=document.querySelector('#chat-messages');if(msgs)msgs.scrollTop=msgs.scrollHeight;if(liveUI?.controller.getStatus().active)document.querySelectorAll('[data-action="voice"],[data-action="meal-voice"]').forEach(el=>el.disabled=true);}
-function navigate(next){if(view===next){render();return;}location.hash=next;}
-function showModal(title,body,cls=''){modalEpoch++;analysisAbort?.abort();analysisAbort=null;const oldVideo=document.querySelector('#camera-video');if(oldVideo)stopCamera(oldVideo);modalContent.innerHTML=`<header class="modal-header"><div><span class="eyebrow">芽团 · 我的陪伴空间</span><h2>${title}</h2></div><button class="icon-btn" data-action="close-modal" aria-label="关闭">${icon('close')}</button></header><div class="modal-body ${cls}">${body}</div>`;if(!modal.open)modal.showModal();}
-function characterModal(){const s=getState();showModal('今天，想让谁陪着你？',`<p class="modal-intro">外貌可以换，属于我们的回忆会留下。</p><div class="character-options">${[['yatuan','芽团','把日子，慢慢长成花'],['human','小予','熟悉模样的 AI 陪伴']].map(([id,t,d])=>`<button class="character-option ${s.character===id?'selected':''}" data-action="choose-character" data-character="${id}"><span class="character-choice-art">${characterArt({...s,character:id,mood:'happy',growthStage:0})}</span><strong>${t}</strong><small>${d}</small>${s.character===id?'<span class="selected-mark">'+icon('check',16)+'</span>':''}</button>`).join('')}<button class="character-option upload-option ${s.character==='custom'?'selected':''}" data-action="${s.customImage?'choose-character':'upload-character'}" data-character="custom"><span class="character-choice-art">${s.customImage?`<img src="${esc(s.customImage)}" alt="已上传的形象">`:icon('upload',36)}</span><strong>我的专属伙伴</strong><small>${s.customImage?'使用已上传的形象':'上传 PNG / JPG / WebP'}</small></button></div><div class="button-row">${btn('upload-character','上传 / 更换自定义形象','secondary','upload')}</div><p class="field-hint">人物为虚构风格示例。上传图片后以原图展示并参与状态动画；当前版本不自动生成照片的多视角或人物动作。</p>`);}
-function mealModal(){showModal('一起看看，这一餐。',`<div class="meal-modal-grid"><div class="meal-photo">${picture?`<img src="${esc(picture)}" alt="待确认的餐食照片">`:`<div>${icon('camera',40)}<p>把这一餐，留在这里</p></div>`}<div class="photo-actions">${btn('camera','拍照','small secondary','camera')}${btn('upload-meal','上传','small secondary','upload')}</div></div><form id="meal-form"><label class="field-label" for="meal-description">盘子里有什么？</label><textarea id="meal-description" name="description" placeholder="比如：米饭、西兰花和豆腐" maxlength="600" required></textarea><button type="button" class="text-btn" data-action="meal-voice">${icon('mic',16)} 说出餐食内容</button><label class="field-label">确认这一餐包含</label><div class="food-checks">${['主食','蔬菜','蛋白质','水果','奶类'].map(g=>`<label><input type="checkbox" name="groups" value="${g}"><span>${g}</span></label>`).join('')}</div><p class="field-hint">${isAIConfigured()?'你可以让视觉 AI 提供参考，再自己确认记录。':'本地体验不会自动识别图片。请确认食物内容，伙伴会据此回应。'}</p><div class="button-row">${isAIConfigured()&&picture?btn('analyze-meal','请 AI 看看','secondary','spark'):''}<button type="submit" class="btn primary">${icon('check')}确认并记录</button></div><p class="analysis-result" id="meal-analysis"></p></form></div>`);}
-async function cameraModal(){if(liveUI?.controller.getStatus().active){toast('实时陪伴正在使用摄像头，请先结束陪伴再单独拍照');return;}showModal('让我看看，你的这一餐。',`<div class="camera-preview"><video id="camera-video" autoplay playsinline muted></video><p id="camera-status">正在请求摄像头权限…</p></div><div class="button-row">${btn('take-photo','拍下这一餐','primary','camera','disabled')}${btn('upload-meal','改为上传照片','secondary','upload')}</div><p class="field-hint">摄像头画面只在当前页面显示，点击拍照后才生成餐食图片。</p>`);const v=document.querySelector('#camera-video');try{await startCamera(v);if(!modal.open||!v.isConnected){stopCamera(v);return;}document.querySelector('#camera-status').textContent='把餐盘放进画面，再拍一张。';document.querySelector('[data-action="take-photo"]').disabled=false;}catch(e){if(e.name!=='AbortError'&&v.isConnected)document.querySelector('#camera-status').textContent=e.message;}}
-function settingsModal(){const s=getState(),config=getAIConfig();showModal('按你的习惯，慢慢相处。',`<form id="settings-form"><div class="settings-section"><h3>聊天风格</h3><div class="personality-options">${[['gentle','温柔倾听'],['lively','活泼元气'],['witty','轻松幽默']].map(([v,t])=>`<label><input type="radio" name="personality" value="${v}" ${s.personality===v?'checked':''}><span>${t}</span></label>`).join('')}</div><label class="toggle-label"><span>朗读伙伴的回应<small>使用设备可用的中文语音</small></span><input type="checkbox" name="sound" ${s.sound?'checked':''}></label></div><div class="settings-section"><h3>桌面投影</h3><p class="field-hint">黑色画面，只在左上角显示伙伴、气泡和可选状态。与同一浏览器的控制页即时同步。</p><label class="range-label">角色大小<input type="range" name="scale" min="0.5" max="2" step="0.05" value="${s.projection.scale}"><output>${s.projection.scale}×</output></label><div class="number-fields"><label>距左侧（px）<input type="number" name="x" min="0" max="3840" value="${s.projection.x}"></label><label>距顶部（px）<input type="number" name="y" min="0" max="2160" value="${s.projection.y}"></label></div><label class="toggle-label"><span>投影显示状态条</span><input type="checkbox" name="showStats" ${s.projection.showStats?'checked':''}></label></div><div class="settings-section"><h3>AI 连接 <span class="pill">可选</span></h3><p class="field-hint">本机运行时填 /api/chat/completions。DeepSeek 的 deepseek-flash 支持看图；密钥放在电脑 .env，网页不填 Key。在线站点需使用自己的 HTTPS 代理。<a href="help.html" target="_blank" rel="noopener">查看完整接线与配置说明 →</a></p><label class="field-label" for="ai-endpoint">服务接口地址</label><input id="ai-endpoint" name="endpoint" type="text" value="${esc(config.endpoint)}" placeholder="https://你的服务/api/chat/completions" autocomplete="off"><label class="field-label" for="ai-model">模型名称（可选）</label><input id="ai-model" name="model" type="text" value="${esc(config.model)}" placeholder="由你的服务配置默认模型"></div><div class="settings-footer"><button type="button" class="text-btn danger" data-action="reset-dialog">清除本地数据</button><button class="btn primary" type="submit">保存设置 ${icon('check',17)}</button></div></form>`);}
-async function talk(text){text=text.trim();if(liveUI?.controller.getStatus().active){const status=liveUI.controller.getStatus();if(status.mode==='armed')liveUI.controller.wake(text);else liveUI.controller.handleText(text);return;}if(!text||pending)return;pauseDemo();pending=true;const epoch=++requestEpoch;const s=getState();if(isAIConfigured()){updateState({chat:[...s.chat,{id:uid(),role:'user',text,at:Date.now()}],mood:'listening'});requestAbort=new AbortController();try{const current=getState();const reply=await requestAI({messages:[{role:'system',content:`你是温暖的桌面AI伙伴${characterName(current)}。请用简洁中文交流，聊天风格${current.personality}。用户自愿保留的偏好：${current.memories.slice(-12).map(m=>m.text).join('；')}。不假装看到未提供的图像，不提供医学诊断。`},...current.chat.slice(-20).map(m=>({role:m.role,content:m.text}))],signal:requestAbort.signal});if(epoch!==requestEpoch)return;const now=getState();updateState({chat:[...now.chat,{id:uid(),role:'assistant',text:reply,at:Date.now()}],speech:reply,mood:'happy',intimacy:Math.min(100,now.intimacy+1)});const memory=extractMemory(text);if(memory)addMemory(memory);if(getState().sound)speakAsync(reply,{onFallback:()=>toast('语音合成服务暂时不可用，已改用系统语音')}).catch(()=>{});}catch(e){if(epoch===requestEpoch){toast(e.message);updateState({mood:'curious'});}}finally{if(epoch===requestEpoch){requestAbort=null;pending=false;render();}}}else{render();await new Promise(resolve=>setTimeout(resolve,380));if(epoch!==requestEpoch)return;const reply=sendChat(text);pending=false;if(getState().sound)speakAsync(reply,{onFallback:()=>toast('语音合成服务暂时不可用，已改用系统语音')}).catch(()=>{});render();}}
-function voice(target='chat'){if(liveUI?.controller.getStatus().active){toast('实时陪伴已在收音，直接和芽团说话即可');return;}pauseDemo();if(listening){stopListening?.();return;}listening=true;document.querySelectorAll('[data-action="voice"]').forEach(el=>el.classList.add('listening'));const caption=document.querySelector('#voice-caption');if(caption)caption.textContent='正在听你说话…';stopListening=startListening({onInterim:t=>{const input=document.querySelector(target==='meal'?'#meal-description':'#chat-input');if(input)input.value=t;},onResult:text=>{if(target==='meal'){const el=document.querySelector('#meal-description');if(el)el.value=text;}else{const el=document.querySelector('#chat-input');if(el)el.value='';talk(text);}},onError:toast,onEnd:()=>{listening=false;stopListening=null;document.querySelectorAll('.listening').forEach(el=>el.classList.remove('listening'));if(caption?.isConnected)caption.textContent='打字或语音，都可以慢慢说。';}});}
-async function action(name,el){switch(name){case 'live':liveUI.open();break;case 'close-modal':modal.close();break;case 'characters':characterModal();break;case 'choose-character':setCharacter(el.dataset.character);characterModal();toast(`现在由${characterName(getState())}陪着你`);break;case 'upload-character':document.querySelector('#character-upload').click();break;case 'settings':settingsModal();break;case 'projection':{let url;if(view==='chess'){try{url=document.querySelector('.chess-embed iframe')?.contentDocument?.getElementById('projection-open')?.href;}catch(e){}}if(!url)url=new URL('projection.html',location.href).href;const win=window.open(url,'yatuan-projection');if(!win)toast('浏览器拦截了新窗口，请允许弹出窗口后重试');break;}case 'sound':if(liveUI?.controller.getStatus().active){toast('实时陪伴会自动朗读；请先结束陪伴再切换普通朗读');return;}updateState({sound:!getState().sound});if(getState().sound)speakAsync('我在这里，慢慢说。',{onFallback:()=>toast('语音合成服务暂时不可用，已改用系统语音')}).catch(()=>{});else stopSpeaking();break;case 'focus-chat':navigate('home');setTimeout(()=>document.querySelector('#chat-input')?.focus(),80);break;case 'quick-chat':talk(el.dataset.text);break;case 'voice':voice();break;case 'meal-voice':voice('meal');break;case 'rest':setMood('sleepy');updateState({speech:'你忙你的，我在这里安静陪着你。',activity:'陪伴'});break;case 'meals':case 'growth':case 'memories':navigate(name);break;case 'meal-modal':picture=null;pictureSource='手动确认';mealModal();break;case 'upload-meal':document.querySelector('#meal-upload').click();break;case 'camera':await cameraModal();break;case 'take-photo':try{const v=document.querySelector('#camera-video');picture=captureFrame(v);pictureSource='拍照后手动确认';stopCamera(v);mealModal();}catch(e){toast(e.message);}break;case 'sample-meal':picture=null;pictureSource='示例餐食';mealModal();document.querySelector('#meal-description').value='示例：米饭、西兰花和豆腐';document.querySelectorAll('[name="groups"]').forEach(c=>c.checked=['主食','蔬菜','蛋白质'].includes(c.value));break;case 'analyze-meal':{if(!picture)return;pauseDemo();const thisModal=modalEpoch;analysisAbort=new AbortController();const thisAnalysis=analysisAbort;el.disabled=true;el.textContent='正在看看…';try{const response=await requestAI({messages:[{role:'system',content:'请根据用户提供的餐食图片，用简短中文描述可能包含的食物，说明无法确定的部分，并给出温和的一般饮食搭配建议。不要估算精确热量、营养素或进行医学诊断。请提醒用户确认。'},{role:'user',content:'帮我看看这顿饭。'}],imageDataUrl:picture,signal:thisAnalysis.signal});if(thisModal!==modalEpoch||!modal.open)return;const out=document.querySelector('#meal-analysis');if(out)out.textContent=response;updateState({speech:response,mood:'curious'});}catch(e){if(e.name!=='AbortError')toast(e.message);}finally{if(analysisAbort===thisAnalysis)analysisAbort=null;if(el.isConnected){el.disabled=false;el.textContent='再看看';}}break;}case 'growth-stage':setGrowth(Number(el.dataset.stage));break;case 'flower-color':updateState({flowerStyle:el.dataset.color,growthStage:3});break;case 'flower-count':updateState({flowerCount:Number(el.dataset.count),growthStage:3});break;case 'demo':if(liveUI?.controller.getStatus().active){toast('先结束实时陪伴，再播放演示');return;}navigate('home');setTimeout(()=>{document.querySelector('#demo-panel')?.scrollIntoView({behavior:'smooth',block:'center'});startDemo();},80);break;case 'demo-play':if(liveUI?.controller.getStatus().active){toast('先结束实时陪伴，再播放演示');return;}getDemoState().paused?resumeDemo():startDemo();render();break;case 'demo-pause':pauseDemo();render();break;case 'demo-stop':stopDemo();render();break;case 'demo-step':if(liveUI?.controller.getStatus().active){toast('先结束实时陪伴，再播放演示');return;}goToStep(Number(el.dataset.index));render();break;case 'add-memory':showModal('留下一点，值得记住的小事。',`<form id="memory-form"><label class="field-label" for="memory-text">你想让我记住什么？</label><textarea id="memory-text" name="text" maxlength="400" placeholder="喜欢的口味、一个小习惯，或者今天的小开心…" required></textarea><div class="modal-end"><button class="btn primary" type="submit">好好记住 ${icon('heart',17)}</button></div></form>`);break;case 'delete-memory':deleteMemory(el.dataset.id);toast('这条记忆已删除');break;case 'coming-chess':navigate('chess');break;case 'coming-craft':showModal('一起做点，小小的作品。',`<div class="coming-preview"><span>${icon('sprout',48)}</span><h3>正在慢慢准备，敬请期待。</h3><p>未来可以选择一个作品，跟着步骤慢慢做，把完成的作品收藏进共同回忆。</p>${btn('close-modal','先回小屋坐坐','primary','home')}</div>`);break;case 'reset-dialog':showModal('重新开始这段小日常？',`<p>这会清除当前浏览器里的聊天、回忆、餐食和自定义形象，也会同步重置已打开的投影窗口。</p><div class="modal-end">${btn('close-modal','保留我的回忆','secondary')}${btn('reset-confirm','确认清除','danger-button')}</div>`);break;case 'reset-confirm':liveUI?.controller.stop();requestEpoch++;requestAbort?.abort();requestAbort=null;pending=false;stopDemo();resetData();modal.close();toast('本地陪伴数据已清除');break;case 'test-tts':showModal('测试豆包 TTS',`<div style="display:flex;flex-direction:column;gap:12px"><label class="field-label">输入要朗读的文本</label><textarea id="tts-text" maxlength="500" style="min-height:80px;width:100%;box-sizing:border-box;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:14px;resize:vertical">你好，我是芽团，今天也很高兴见到你。</textarea><p class="analysis-result" id="tts-status" style="min-height:18px"></p><div class="button-row"><button class="btn secondary" data-action="stop-tts">停止</button><button class="btn primary" data-action="run-tts-test">▶ 播放 TTS</button></div></div>`);break;case 'run-tts-test':{const text=(document.querySelector('#tts-text')?.value||'').trim();if(!text){toast('请输入测试文字');return;}const statusEl=document.querySelector('#tts-status');if(statusEl)statusEl.textContent='正在请求豆包 TTS…';el.disabled=true;const origLabel=el.textContent;el.textContent='请求中…';try{const res=await fetch('/api/tts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:text.trim().slice(0,1600)})});if(!res.ok){const errText=await res.text().catch(()=>'');if(statusEl?.isConnected)statusEl.textContent=`✗ HTTP ${res.status} — ${errText}`;return;}const blob=await res.blob();if(statusEl?.isConnected)statusEl.textContent=`HTTP 200 · 音频 ${(blob.size/1024).toFixed(1)} KB，正在播放…`;const url=URL.createObjectURL(blob);const audio=new Audio(url);audio.onended=()=>{URL.revokeObjectURL(url);if(statusEl?.isConnected)statusEl.textContent=`✓ 豆包 TTS 播放完成 · ${(blob.size/1024).toFixed(1)} KB`;};audio.onerror=()=>{URL.revokeObjectURL(url);if(statusEl?.isConnected)statusEl.textContent='✗ 音频播放失败';};await audio.play();}catch(e){if(statusEl?.isConnected)statusEl.textContent='✗ 错误：'+e.message;toast(e.message);}finally{if(el.isConnected){el.disabled=false;el.textContent=origLabel;}}break;}case 'stop-tts':stopSpeaking();{const s=document.querySelector('#tts-status');if(s)s.textContent='已停止。';}break;case 'capabilities':showModal('这间小屋，已经准备了什么？',`<div class="capability-list"><p><b>可以直接体验</b><br>聊天界面、中文语音输入与朗读、摄像头拍照、手动确认餐食、本地偏好记忆、形象切换与上传、成长预览，以及 18 秒互动演示。</p><p><b>桌面实时联动</b><br>同一浏览器、同一网址下的控制页与投影页通过本地消息实时同步。手机网页会自动适配布局；不同设备之间尚未建立同步连接。</p><p><b>真实 AI 能力</b><br>未配置时为本地演示。接入支持视觉的模型后，进入「实时陪伴」开启语音唤醒、按间隔摄像头观察与朗读；投影视图同步表情和成长。</p><p><b>你的数据</b><br>记忆、聊天与图片存于当前浏览器。使用浏览器语音识别可能由浏览器供应商处理音频；连接 AI 服务后，提交的对话与照片会发送到该接口。开启实时陪伴并唤醒后，摄像头会按设定间隔发送餐盘帧，结束陪伴后停止。</p></div>`);break;}}
-app.addEventListener('click',e=>{const el=e.target.closest('[data-action]');if(el)action(el.dataset.action,el);});modal.addEventListener('click',e=>{if(e.target===modal){modal.close();return;}const el=e.target.closest('[data-action]');if(el)action(el.dataset.action,el);});
-modal.addEventListener('close',()=>{modalEpoch++;analysisAbort?.abort();analysisAbort=null;const v=document.querySelector('#camera-video');if(v)stopCamera(v);stopListening?.();});
-document.addEventListener('submit',async e=>{if(!['chat-form','meal-form','settings-form','memory-form'].includes(e.target.id))return;e.preventDefault();const form=e.target,fd=new FormData(form);if(form.id==='chat-form'){const text=String(fd.get('message')||'');form.reset();await talk(text);}if(form.id==='meal-form'){const description=String(fd.get('description')||'').trim();if(!description){toast('先告诉我，这一餐吃了什么');return;}pauseDemo();const record=saveMeal({description,groups:fd.getAll('groups'),image:picture,source:pictureSource});modal.close();toast('这一餐，已经好好记住了');if(getState().sound&&!liveUI?.controller.getStatus().active)speakAsync(record.advice,{onFallback:()=>toast('语音合成服务暂时不可用，已改用系统语音')}).catch(()=>{});}if(form.id==='memory-form'){const text=String(fd.get('text')||'').trim();if(!text)return;addMemory(text);modal.close();toast('我会记住这件小事');}if(form.id==='settings-form'){try{if(liveUI?.controller.getStatus().active)throw new Error('先结束实时陪伴，再修改设置。');const endpoint=String(fd.get('endpoint')||'').trim();if(endpoint)saveAIConfig({endpoint,model:String(fd.get('model')||'')});else clearAIConfig();updateState({personality:fd.get('personality'),sound:fd.has('sound'),projection:{scale:Number(fd.get('scale')),x:Number(fd.get('x')),y:Number(fd.get('y')),showStats:fd.has('showStats')}});modal.close();toast('设置已保存，投影视图也会同步变化');}catch(err){toast(err.message);}}});
-modal.addEventListener('input',e=>{if(e.target.name==='scale')e.target.nextElementSibling.textContent=e.target.value+'×';});
-shell();render();
-function cancelLegacyMedia(){cancelListening();stopSpeaking();listening=false;requestEpoch++;requestAbort?.abort();analysisAbort?.abort();pending=false;const v=document.querySelector('#camera-video');if(v)stopCamera(v);if(modal.open)modal.close();}
-liveUI=mountLiveUI({beforeStart:cancelLegacyMedia,onActive:cancelLegacyMedia});
-addEventListener('ai-config-changed',render);
-discoverLocalAI().then(()=>render());
-document.querySelector('#character-upload').addEventListener('change',async e=>{const file=e.target.files?.[0];e.target.value='';if(!file)return;try{const image=await readImageFile(file,{maxSize:720});updateState({customImage:image,character:'custom'});characterModal();toast('你的新伙伴，已经来到小屋');}catch(err){toast(err.message);}});
-document.querySelector('#meal-upload').addEventListener('change',async e=>{const file=e.target.files?.[0];e.target.value='';if(!file)return;try{picture=await readImageFile(file);pictureSource='上传后手动确认';const v=document.querySelector('#camera-video');if(v)stopCamera(v);mealModal();}catch(err){toast(err.message);}});
-addEventListener('hashchange',()=>{view=location.hash.slice(1)||'home';render();window.scrollTo({top:0,behavior:'instant'});});
+let view = location.hash.slice(1) || 'home', pending = false, listening = false, stopListening = null, picture = null,
+    pictureSource = '手动确认', toastTimer, requestAbort, analysisAbort, requestEpoch = 0, modalEpoch = 0;
+const moodNames = {happy: '开心', curious: '好奇', sleepy: '休息', eating: '用餐', listening: '倾听'};
+const uid = () => crypto.randomUUID?.() || String(Date.now());
+const date = (at) => new Intl.DateTimeFormat('zh-CN', {month: 'long', day: 'numeric'}).format(at);
+const btn = (action, label, cls = 'secondary', ico = '', attrs = '') => `<button type="button" class="btn ${cls}" data-action="${action}" ${attrs}>${ico ? icon(ico) : ''}${label}</button>`;
+
+function toast(message) {
+    const el = document.querySelector('#toast');
+    el.textContent = message;
+    el.classList.add('visible');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('visible'), 4000);
+}
+
+function shell() {
+    app.innerHTML = `<aside class="sidebar"><a href="#home" class="brand"><img src="icon.svg" alt=""><span>芽团<small>桌边的陪伴</small></span></a><div class="nav-caption">一起过日子</div><nav>${nav.map(([id, ic, title]) => `<a href="#${id}" data-nav="${id}">${icon(ic)}<span>${title}</span>${id === 'activities' ? '<span class="nav-dot"></span>' : ''}</a>`).join('')}</nav><div class="sidebar-note"><span class="little-leaves">${icon('sprout', 32)}</span><p>把一起度过的日子，<br>慢慢长出来。</p><small>YOUR LITTLE EVERYDAY</small></div><div class="sidebar-bottom"><button data-action="characters">${icon('image')}<span>我的伙伴</span>${icon('chevron', 16)}</button><button data-action="settings">${icon('settings')}<span>偏好与设置</span></button></div></aside><div class="workspace"><header class="topbar"><a class="mobile-brand" href="#home"><img src="icon.svg" alt="">芽团</a><div class="breadcrumb">我的陪伴空间<span>/</span><b id="page-label">陪伴小屋</b></div><div class="top-actions"><button class="mode-badge" data-action="settings"><span></span><span id="mode-label">本地体验</span></button>${btn('live', '开始陪伴', 'live-top secondary', 'mic')}${btn('projection', '开始投影', 'dark', 'projector')}<button class="avatar-button" data-action="characters" aria-label="切换伙伴形象"><img src="icon.svg" alt="我的伙伴"></button></div></header><main id="main"></main><footer class="site-footer"><span>一张桌子，两份陪伴。</span><button data-action="capabilities">关于此体验 ${icon('chevron', 13)}</button></footer></div><nav class="mobile-nav">${nav.map(([id, ic, title]) => `<a href="#${id}" data-nav="${id}">${icon(ic)}<span>${title.replace('陪伴小屋', '小屋').replace('棋盘小搭子', '下棋').replace('一起吃饭', '饮食').replace('成长花园', '成长').replace('我们的回忆', '回忆').replace('更多陪伴', '更多')}</span></a>`).join('')}</nav><input id="character-upload" class="visually-hidden" type="file" accept="image/png,image/jpeg,image/webp,image/gif"><input id="meal-upload" class="visually-hidden" type="file" accept="image/png,image/jpeg,image/webp,image/gif">`;
+}
+
+function header(title, description, extra = '') {
+    return `<section class="page-heading"><div><div class="eyebrow">${icon('sun', 16)} ${date(Date.now())} · 小小日常，正在发生</div><h1>${title}</h1><p>${description}</p></div>${extra}</section>`;
+}
+
+function statBars(s) {
+    return `<div class="stats"><div class="stat green"><div>${icon('leaf')}<span>今日活力</span><strong>${s.energy}<small>/100</small></strong></div><div class="track"><i style="width:${s.energy}%"></i></div></div><div class="stat pink"><div>${icon('heart')}<span>亲密度</span><strong>${s.intimacy}<small>/100</small></strong></div><div class="track"><i style="width:${s.intimacy}%"></i></div></div><div class="stat amber"><div>${icon('sprout')}<span>成长进度</span><strong>${s.growth}<small>/100</small></strong></div><div class="track"><i style="width:${s.growth}%"></i></div></div></div>`;
+}
+
+function scene(s) {
+    return `<section class="scene-card ${s.activity === '用餐' ? 'is-meal' : ''}"><div class="scene-forest"><svg viewBox="445 196 754 142" preserveAspectRatio="none" aria-hidden="true"><image href="assets/design-reference.png" width="1536" height="1024"/></svg></div><div class="scene-ground"></div><div class="scene-top"><span class="scene-tag">${icon('home', 15)} 森林里的小家</span><button class="scene-icon" data-action="sound" aria-label="${s.sound ? '关闭' : '开启'}语音朗读">${icon(s.sound ? 'volume' : 'moon', 19)}</button></div><div class="scene-hello"><span>${characterName(s)}在这里</span><small>今天也，很高兴见到你。</small></div><div class="scene-speech" aria-live="polite">${esc(s.speech)}</div><div class="scene-rug"></div><div class="hero-character">${characterArt(s)}</div><div class="floating-leaf leaf-one">${icon('leaf', 24)}</div><div class="floating-leaf leaf-two">${icon('leaf', 17)}</div>${s.activity === '用餐' && !liveUI?.controller.getStatus().active ? '<div class="scene-meal-card"><svg viewBox="1244 451 233 109" aria-hidden="true"><image href="assets/design-reference.png" width="1536" height="1024"/></svg><small>示例餐食 · 一起开饭</small></div>' : ''}<div class="scene-bottom"><span><i></i>${moodNames[s.mood]} · ${s.activity === '用餐' ? '陪你吃饭' : '陪在你身边'}</span><button data-action="characters">切换形象 ${icon('chevron', 14)}</button></div></section>`;
+}
+
+function chatCard(s) {
+    return `<section class="card chat-card"><div class="card-heading"><div>${icon('chat')}<h2>聊一会儿</h2><span class="tiny-dot"></span></div><span class="subtle">${isAIConfigured() ? '' : '本地演示对话'}</span></div><div class="chat-messages" id="chat-messages" role="log" aria-label="与伙伴的对话">${s.chat.slice(-12).map(m => `<div class="message ${m.role}">${m.role === 'assistant' ? '<img src="icon.svg" alt="">' : ''}<p>${esc(m.text)}</p></div>`).join('')}${pending ? '<div class="typing"><i></i><i></i><i></i><span>正在想一想…</span></div>' : ''}</div><div class="chat-suggestions"><button data-action="quick-chat" data-text="今天有点累">今天有点累</button><button data-action="quick-chat" data-text="请记住，我喜欢热乎乎的晚饭">记住我的偏好</button><button data-action="test-tts" style="opacity:.55;font-size:11px;padding:4px 10px">🔊 测试TTS</button></div><form id="chat-form" class="chat-composer"><input id="chat-input" name="message" placeholder="和${characterName(s)}说点什么…" autocomplete="off" maxlength="1000" aria-label="聊天内容"><button type="button" class="icon-btn ${listening ? 'listening' : ''}" data-action="voice" aria-label="${listening ? '停止语音输入' : '开始语音输入'}">${icon('mic')}</button><button class="send-btn" type="submit" aria-label="发送消息" ${pending ? 'disabled' : ''}>${icon('send', 18)}</button></form><div class="voice-caption" id="voice-caption">${listening ? '正在听你说话…' : '打字或语音，都可以慢慢说。'}</div></section>`;
+}
+
+function demoPanel() {
+    const d = getDemoState();
+    return `<section class="demo-panel" id="demo-panel"><div class="demo-heading"><div class="demo-emblem">${icon('play', 19)}</div><div><h2>看见，陪伴，然后长大</h2><p>18 秒，体验芽团的第一次绽放</p></div><span class="demo-label">演示剧场</span></div><div class="demo-steps">${DEMO_STEPS.map((step, i) => `<button data-action="demo-step" data-index="${i}" class="${d.index === i && (d.running || d.done) ? 'active' : ''}"><i>${i + 1}</i><span>${esc(step.title.replace(/演示/g, ''))}</span></button>`).join('')}</div><div class="demo-progress"><i style="width:${d.progress * 100}%"></i></div><div class="demo-footer"><span id="demo-status">${d.done ? '第一朵花已经盛开' : d.running ? d.paused ? '已暂停，可以随时和它聊天' : DEMO_STEPS[d.index]?.description : '示例餐食与成长，可暂停、跳步、重播'}</span><div>${btn(d.running && !d.paused ? 'demo-pause' : 'demo-play', d.running && !d.paused ? '暂停' : d.paused ? '继续演示' : d.done ? '再看一次' : '开始演示', 'small ' + (d.running ? 'secondary' : 'primary'), d.running && !d.paused ? 'pause' : 'play')}${d.running || d.done ? btn('demo-stop', '结束', 'small ghost', 'reset') : ''}</div></div></section>`;
+}
+
+function home(s) {
+    return `${header('今天，也一起慢慢长大。', '不用赶路的时候，就在这里坐一会儿。', `<button class="companion-day" data-action="growth">${icon('sprout', 25)}<span>相伴的第 <b>${Math.max(1, Math.floor((Date.now() - s.createdAt) / 86400000) + 1)}</b> 天<small>${stages[s.growthStage]}</small></span></button>`)}<div class="home-grid"><div class="home-left">${scene(s)}${demoPanel()}</div><aside class="home-right"><section class="card wellbeing-card"><div class="card-heading"><div><h2>小小的成长</h2></div><button class="text-btn" data-action="growth">去花园 ${icon('chevron', 14)}</button></div>${statBars(s)}<div class="growth-caption">${icon('sprout', 14)} 每一份陪伴，都被好好留下。</div></section>${chatCard(s)}</aside></div><section class="home-bottom"><div class="section-title"><h2>在桌边，还可以一起…</h2><a href="#activities">探索更多 ${icon('arrow', 15)}</a></div><div class="activity-preview"><button data-action="meals" class="activity-tile meal"><span class="activity-illustration">${icon('bowl', 34)}</span><div><strong>好好吃一顿饭</strong><small>小碗已经准备好啦</small></div>${icon('arrow', 19)}</button><button data-action="coming-chess" class="activity-tile chess"><span class="activity-illustration chess-board"><i></i><i></i></span><div><strong>下一盘慢慢的棋</strong><small>和芽团一起下棋</small></div>${icon('arrow', 19)}</button><button data-action="coming-craft" class="activity-tile craft"><span class="activity-illustration">${icon('spark', 34)}</span><div><strong>做点有趣的小东西</strong><small>敬请期待</small></div><span class="soon-dot">SOON</span></button></div></section>`;
+}
+
+function meals(s) {
+    return `${header('每一顿，都值得好好吃。', '一起看看盘子里的日常。记录由你确认，建议也由你选择。', btn('meal-modal', '记录这一餐', 'primary', 'plus'))}<div class="meal-workspace"><section class="meal-invitation card"><div class="meal-visual"><div class="drawn-plate"><span>🥦</span><span>🍚</span><span>🥕</span></div></div><div><span class="eyebrow">坐下来，一起开饭</span><h2>今天，盘子里有什么？</h2><p>打开摄像头或上传餐食照片，也可以直接用语音告诉我。</p><div class="button-row">${btn('camera', '打开摄像头', 'primary', 'camera')}${btn('upload-meal', '上传照片', 'secondary', 'upload')}</div><button class="text-btn sample-link" data-action="sample-meal">${icon('play', 15)} 先试试示例餐食</button></div></section><section class="card meal-tip"><span>${icon('sprout', 31)}</span><h3>吃饭，也是相伴的时间。</h3><p>餐食照片会保存在当前浏览器。未连接视觉 AI 时，由你确认食物内容，我们一起留下这顿饭。</p><button class="text-btn" data-action="settings">查看连接状态 ${icon('arrow', 14)}</button></section></div><div class="section-title"><h2>我的餐食日记 <small>${s.meals.length} 餐</small></h2><span class="subtle">一点一点，留住日常</span></div>${s.meals.length ? `<div class="meal-records">${[...s.meals].reverse().map(m => `<article class="card meal-record"><div class="meal-record-image">${m.image ? `<img src="${esc(m.image)}" alt="你记录的餐食">` : '<span>🍚</span>'}<small>${esc(m.source)}</small></div><div><small>${date(m.at)}</small><h3>${esc(m.description || m.groups.join('、'))}</h3><div class="tags">${m.groups.map(g => `<span>${esc(g)}</span>`).join('')}</div><p>${esc(m.advice)}</p></div></article>`).join('')}</div>` : empty('bowl', '第一顿饭，从今天开始。', '不需要完美的摆盘，普通的一餐也值得记录。', btn('meal-modal', '记录这一餐', 'primary', 'plus'))}`;
+}
+
+function growth(s) {
+    return `${header('把日子，慢慢长成花。', '两片叶，始终相伴。每一朵花，都有一个属于我们的来处。', btn('demo', '演示成长过程', 'primary', 'play'))}<div class="growth-layout"><section class="card garden-stage"><div class="garden-orbit orbit-1"></div><div class="garden-orbit orbit-2"></div><span class="garden-current">${stages[s.growthStage]}</span><div class="garden-character">${characterArt(s)}</div><p>${s.growthStage === 3 ? '重要的时刻，开成一朵小小的花。' : '每一份认真生活，都在悄悄发芽。'}</p></section><section class="card garden-settings"><div class="card-heading"><h2>属于你的绽放</h2><span class="pill">外观预览</span></div><label class="field-label">成长阶段</label><div class="growth-stages">${stages.map((st, i) => `<button data-action="growth-stage" data-stage="${i}" class="${s.growthStage === i ? 'selected' : ''}"><span>${['🌱', '🌿', '🌷', '🌼'][i]}</span><b>${st.split(' · ')[1]}</b><small>${st.split(' · ')[0]}</small></button>`).join('')}</div><label class="field-label">花朵的颜色</label><div class="color-options">${[['cream', '奶油黄', '#f0cf77'], ['pink', '晨曦粉', '#eeb1c0'], ['blue', '晴空蓝', '#accddf']].map(([id, t, c]) => `<button data-action="flower-color" data-color="${id}" class="${s.flowerStyle === id ? 'selected' : ''}"><i style="background:${c}"></i>${t}</button>`).join('')}</div><label class="field-label">想开几朵花？</label><div class="segmented">${[1, 2, 3].map(n => `<button data-action="flower-count" data-count="${n}" class="${s.flowerCount === n ? 'active' : ''}">${n} 朵</button>`).join('')}</div><p class="field-hint">此处可直接预览外观。日常成长和今天的心情分别记录，已经积累的陪伴会一直留下。</p></section></div>${demoPanel()}<section class="story-card"><span>${icon('sprout', 40)}</span><div><h2>“是我们一起过的日子。”</h2><p>芽团是一颗还不知道自己会开什么花的小种子。它来到你的桌边，把你愿意留下的片刻收进叶脉里。一起吃的晚饭、完成的小手工、安静待着的下午……有一天，这些普通的日子，开出了第一朵花。</p></div></section>`;
+}
+
+function memories(s) {
+    return `${header('小事，也被好好记住。', '你喜欢的口味、想留下的片刻，都可以慢慢告诉我。', btn('add-memory', '留下一段回忆', 'primary', 'plus'))}<div class="memory-banner"><span>${icon('book', 32)}</span><div><h2>我在慢慢了解你。</h2><p>试着说「请记住，我喜欢热乎乎的晚饭」。你也可以随时删除这里的记忆。</p></div><span class="memory-count">${s.memories.length}<small>份小小记忆</small></span></div>${s.memories.length ? `<div class="memory-grid">${[...s.memories].reverse().map((m, i) => `<article class="memory-note note-${i % 3}"><div>${icon('heart', 18)}<button class="icon-btn" data-action="delete-memory" data-id="${esc(m.id)}" aria-label="删除这条记忆">${icon('trash', 16)}</button></div><p>${esc(m.text)}</p><small>${date(m.at)} · 好好收着</small></article>`).join('')}</div>` : empty('heart', '还没有记忆，也没关系。', '我们有很多日子，可以慢慢认识。', btn('focus-chat', '从一句话开始', 'primary', 'chat'))}`;
+}
+
+function activities() {
+    return `${header('在一起，做点小事情。', '吃饭、下棋、做手工，或者什么都不做。陪伴有很多种样子。')}<div class="activities-grid"><article class="activity-big dining"><div class="activity-art"><span>🍵</span><i>🥣</i></div><span class="pill available">现在就可以</span><h2>一起吃饭</h2><p>看看今天的餐食，聊聊今天的心情。<br>我也把小碗准备好了。</p>${btn('meals', '一起开饭', 'primary', 'arrow')}</article><article class="activity-big board-game"><div class="activity-art board-art"><i></i><b></b><span></span></div><span class="pill available">现在就可以</span><h2>棋盘上的小搭子</h2><p>认真做你的对手，也做你的陪练。<br>从一盘不着急的五子棋开始。</p>${btn('coming-chess', '开始下棋', 'primary', 'arrow')}</article><article class="activity-big handcraft"><div class="activity-art craft-art"><span>✂</span><i>✿</i></div><span class="pill">敬请期待</span><h2>一起做点小手工</h2><p>把大作品拆成小步骤。<br>每一件完成的小事，都值得纪念。</p>${btn('coming-craft', '看看未来怎么玩', 'secondary', 'arrow')}</article></div><section class="familiar-banner"><div><span class="eyebrow">熟悉的形象，温柔的陪伴</span><h2>也可以，换成你熟悉的模样。</h2><p>芽团、人物伙伴，或你自己上传的形象。聊天风格与回忆由你管理。</p>${btn('characters', '选择我的伙伴', 'dark', 'image')}</div><div class="familiar-human">${characterArt({
+        ...getState(),
+        character: 'human',
+        mood: 'happy'
+    })}</div></section>`;
+}
+
+function chess() {
+    return `<div class="chess-embed"><iframe src="chess.html" title="棋盘小搭子" allowfullscreen></iframe></div>`;
+}
+
+function empty(ic, title, copy, action = '') {
+    return `<section class="empty-state"><span>${icon(ic, 34)}</span><h3>${title}</h3><p>${copy}</p>${action}</section>`;
+}
+
+function render() {
+    if (!nav.some(n => n[0] === view)) view = 'home';
+    const s = getState();
+    const input = document.querySelector('#chat-input'), draft = input?.value || '',
+        focused = document.activeElement === input;
+    document.querySelector('#main').innerHTML = ({home, meals, growth, memories, activities, chess}[view])(s);
+    document.querySelectorAll('[data-nav]').forEach(el => el.classList.toggle('active', el.dataset.nav === view));
+    document.querySelector('#page-label').textContent = nav.find(n => n[0] === view)[2];
+    document.querySelector('#mode-label').textContent = '本地体验';
+    const next = document.querySelector('#chat-input');
+    if (next) {
+        next.value = draft;
+        if (focused) next.focus({preventScroll: true});
+    }
+    const msgs = document.querySelector('#chat-messages');
+    if (msgs) msgs.scrollTop = msgs.scrollHeight;
+    if (liveUI?.controller.getStatus().active) document.querySelectorAll('[data-action="voice"],[data-action="meal-voice"]').forEach(el => el.disabled = true);
+}
+
+function navigate(next) {
+    if (view === next) {
+        render();
+        return;
+    }
+    location.hash = next;
+}
+
+function showModal(title, body, cls = '') {
+    modalEpoch++;
+    analysisAbort?.abort();
+    analysisAbort = null;
+    const oldVideo = document.querySelector('#camera-video');
+    if (oldVideo) stopCamera(oldVideo);
+    modalContent.innerHTML = `<header class="modal-header"><div><span class="eyebrow">芽团 · 我的陪伴空间</span><h2>${title}</h2></div><button class="icon-btn" data-action="close-modal" aria-label="关闭">${icon('close')}</button></header><div class="modal-body ${cls}">${body}</div>`;
+    if (!modal.open) modal.showModal();
+}
+
+function characterModal() {
+    const s = getState();
+    showModal('今天，想让谁陪着你？', `<p class="modal-intro">外貌可以换，属于我们的回忆会留下。</p><div class="character-options">${[['yatuan', '芽团', '把日子，慢慢长成花'], ['human', '小予', '熟悉模样的 AI 陪伴']].map(([id, t, d]) => `<button class="character-option ${s.character === id ? 'selected' : ''}" data-action="choose-character" data-character="${id}"><span class="character-choice-art">${characterArt({
+        ...s,
+        character: id,
+        mood: 'happy',
+        growthStage: 0
+    })}</span><strong>${t}</strong><small>${d}</small>${s.character === id ? '<span class="selected-mark">' + icon('check', 16) + '</span>' : ''}</button>`).join('')}<button class="character-option upload-option ${s.character === 'custom' ? 'selected' : ''}" data-action="${s.customImage ? 'choose-character' : 'upload-character'}" data-character="custom"><span class="character-choice-art">${s.customImage ? `<img src="${esc(s.customImage)}" alt="已上传的形象">` : icon('upload', 36)}</span><strong>我的专属伙伴</strong><small>${s.customImage ? '使用已上传的形象' : '上传 PNG / JPG / WebP'}</small></button></div><div class="button-row">${btn('upload-character', '上传 / 更换自定义形象', 'secondary', 'upload')}</div><p class="field-hint">人物为虚构风格示例。上传图片后以原图展示并参与状态动画；当前版本不自动生成照片的多视角或人物动作。</p>`);
+}
+
+function mealModal() {
+    showModal('一起看看，这一餐。', `<div class="meal-modal-grid"><div class="meal-photo">${picture ? `<img src="${esc(picture)}" alt="待确认的餐食照片">` : `<div>${icon('camera', 40)}<p>把这一餐，留在这里</p></div>`}<div class="photo-actions">${btn('camera', '拍照', 'small secondary', 'camera')}${btn('upload-meal', '上传', 'small secondary', 'upload')}</div></div><form id="meal-form"><label class="field-label" for="meal-description">盘子里有什么？</label><textarea id="meal-description" name="description" placeholder="比如：米饭、西兰花和豆腐" maxlength="600" required></textarea><button type="button" class="text-btn" data-action="meal-voice">${icon('mic', 16)} 说出餐食内容</button><label class="field-label">确认这一餐包含</label><div class="food-checks">${['主食', '蔬菜', '蛋白质', '水果', '奶类'].map(g => `<label><input type="checkbox" name="groups" value="${g}"><span>${g}</span></label>`).join('')}</div><p class="field-hint">${isAIConfigured() ? '你可以让视觉 AI 提供参考，再自己确认记录。' : '本地体验不会自动识别图片。请确认食物内容，伙伴会据此回应。'}</p><div class="button-row">${isAIConfigured() && picture ? btn('analyze-meal', '请 AI 看看', 'secondary', 'spark') : ''}<button type="submit" class="btn primary">${icon('check')}确认并记录</button></div><p class="analysis-result" id="meal-analysis"></p></form></div>`);
+}
+
+async function cameraModal() {
+    if (liveUI?.controller.getStatus().active) {
+        toast('实时陪伴正在使用摄像头，请先结束陪伴再单独拍照');
+        return;
+    }
+    showModal('让我看看，你的这一餐。', `<div class="camera-preview"><video id="camera-video" autoplay playsinline muted></video><p id="camera-status">正在请求摄像头权限…</p></div><div class="button-row">${btn('take-photo', '拍下这一餐', 'primary', 'camera', 'disabled')}${btn('upload-meal', '改为上传照片', 'secondary', 'upload')}</div><p class="field-hint">摄像头画面只在当前页面显示，点击拍照后才生成餐食图片。</p>`);
+    const v = document.querySelector('#camera-video');
+    try {
+        await startCamera(v);
+        if (!modal.open || !v.isConnected) {
+            stopCamera(v);
+            return;
+        }
+        document.querySelector('#camera-status').textContent = '把餐盘放进画面，再拍一张。';
+        document.querySelector('[data-action="take-photo"]').disabled = false;
+    } catch (e) {
+        if (e.name !== 'AbortError' && v.isConnected) document.querySelector('#camera-status').textContent = e.message;
+    }
+}
+
+function settingsModal() {
+    const s = getState(), config = getAIConfig();
+    showModal('按你的习惯，慢慢相处。', `<form id="settings-form"><div class="settings-section"><h3>聊天风格</h3><div class="personality-options">${[['gentle', '温柔倾听'], ['lively', '活泼元气'], ['witty', '轻松幽默']].map(([v, t]) => `<label><input type="radio" name="personality" value="${v}" ${s.personality === v ? 'checked' : ''}><span>${t}</span></label>`).join('')}</div><label class="toggle-label"><span>朗读伙伴的回应<small>使用设备可用的中文语音</small></span><input type="checkbox" name="sound" ${s.sound ? 'checked' : ''}></label></div><div class="settings-section"><h3>桌面投影</h3><p class="field-hint">黑色画面，只在左上角显示伙伴、气泡和可选状态。与同一浏览器的控制页即时同步。</p><label class="range-label">角色大小<input type="range" name="scale" min="0.5" max="2" step="0.05" value="${s.projection.scale}"><output>${s.projection.scale}×</output></label><div class="number-fields"><label>距左侧（px）<input type="number" name="x" min="0" max="3840" value="${s.projection.x}"></label><label>距顶部（px）<input type="number" name="y" min="0" max="2160" value="${s.projection.y}"></label></div><label class="toggle-label"><span>投影显示状态条</span><input type="checkbox" name="showStats" ${s.projection.showStats ? 'checked' : ''}></label></div><div class="settings-section"><h3>AI 连接 <span class="pill">可选</span></h3><p class="field-hint">本机运行时填 /api/chat/completions。DeepSeek 的 deepseek-flash 支持看图；密钥放在电脑 .env，网页不填 Key。在线站点需使用自己的 HTTPS 代理。<a href="help.html" target="_blank" rel="noopener">查看完整接线与配置说明 →</a></p><label class="field-label" for="ai-endpoint">服务接口地址</label><input id="ai-endpoint" name="endpoint" type="text" value="${esc(config.endpoint)}" placeholder="https://你的服务/api/chat/completions" autocomplete="off"><label class="field-label" for="ai-model">模型名称（可选）</label><input id="ai-model" name="model" type="text" value="${esc(config.model)}" placeholder="由你的服务配置默认模型"></div><div class="settings-footer"><button type="button" class="text-btn danger" data-action="reset-dialog">清除本地数据</button><button class="btn primary" type="submit">保存设置 ${icon('check', 17)}</button></div></form>`);
+}
+
+async function talk(text) {
+    text = text.trim();
+    if (liveUI?.controller.getStatus().active) {
+        const status = liveUI.controller.getStatus();
+        if (status.mode === 'armed') liveUI.controller.wake(text); else liveUI.controller.handleText(text);
+        return;
+    }
+    if (!text || pending) return;
+    pauseDemo();
+    pending = true;
+    const epoch = ++requestEpoch;
+    const s = getState();
+    if (isAIConfigured()) {
+        updateState({chat: [...s.chat, {id: uid(), role: 'user', text, at: Date.now()}], mood: 'listening'});
+        requestAbort = new AbortController();
+        try {
+            const current = getState();
+            const reply = await requestAI({
+                messages: [{
+                    role: 'system',
+                    content: `你是温暖的桌面AI伙伴${characterName(current)}。请用简洁中文交流，聊天风格${current.personality}。用户自愿保留的偏好：${current.memories.slice(-12).map(m => m.text).join('；')}。不假装看到未提供的图像，不提供医学诊断。`
+                }, ...current.chat.slice(-20).map(m => ({role: m.role, content: m.text}))], signal: requestAbort.signal
+            });
+            if (epoch !== requestEpoch) return;
+            const now = getState();
+            updateState({
+                chat: [...now.chat, {id: uid(), role: 'assistant', text: reply, at: Date.now()}],
+                speech: reply,
+                mood: 'happy',
+                intimacy: Math.min(100, now.intimacy + 1)
+            });
+            const memory = extractMemory(text);
+            if (memory) addMemory(memory);
+            if (getState().sound) speakAsync(reply, {onFallback: () => toast('语音合成服务暂时不可用，已改用系统语音')}).catch(() => {
+            });
+        } catch (e) {
+            if (epoch === requestEpoch) {
+                toast(e.message);
+                updateState({mood: 'curious'});
+            }
+        } finally {
+            if (epoch === requestEpoch) {
+                requestAbort = null;
+                pending = false;
+                render();
+            }
+        }
+    } else {
+        render();
+        await new Promise(resolve => setTimeout(resolve, 380));
+        if (epoch !== requestEpoch) return;
+        const reply = sendChat(text);
+        pending = false;
+        if (getState().sound) speakAsync(reply, {onFallback: () => toast('语音合成服务暂时不可用，已改用系统语音')}).catch(() => {
+        });
+        render();
+    }
+}
+
+function voice(target = 'chat') {
+    if (liveUI?.controller.getStatus().active) {
+        toast('实时陪伴已在收音，直接和芽团说话即可');
+        return;
+    }
+    pauseDemo();
+    if (listening) {
+        stopListening?.();
+        return;
+    }
+    listening = true;
+    document.querySelectorAll('[data-action="voice"]').forEach(el => el.classList.add('listening'));
+    const caption = document.querySelector('#voice-caption');
+    if (caption) caption.textContent = '正在听你说话…';
+    stopListening = startListening({
+        onInterim: t => {
+            const input = document.querySelector(target === 'meal' ? '#meal-description' : '#chat-input');
+            if (input) input.value = t;
+        }, onResult: text => {
+            if (target === 'meal') {
+                const el = document.querySelector('#meal-description');
+                if (el) el.value = text;
+            } else {
+                const el = document.querySelector('#chat-input');
+                if (el) el.value = '';
+                talk(text);
+            }
+        }, onError: toast, onEnd: () => {
+            listening = false;
+            stopListening = null;
+            document.querySelectorAll('.listening').forEach(el => el.classList.remove('listening'));
+            if (caption?.isConnected) caption.textContent = '打字或语音，都可以慢慢说。';
+        }
+    });
+}
+
+async function action(name, el) {
+    switch (name) {
+        case 'live':
+            liveUI.open();
+            break;
+        case 'close-modal':
+            modal.close();
+            break;
+        case 'characters':
+            characterModal();
+            break;
+        case 'choose-character':
+            setCharacter(el.dataset.character);
+            characterModal();
+            toast(`现在由${characterName(getState())}陪着你`);
+            break;
+        case 'upload-character':
+            document.querySelector('#character-upload').click();
+            break;
+        case 'settings':
+            settingsModal();
+            break;
+        case 'projection': {
+            let url;
+            if (view === 'chess') {
+                try {
+                    url = document.querySelector('.chess-embed iframe')?.contentDocument?.getElementById('projection-open')?.href;
+                } catch (e) {
+                }
+            }
+            if (!url) url = new URL('projection.html', location.href).href;
+            const win = window.open(url, 'yatuan-projection');
+            if (!win) toast('浏览器拦截了新窗口，请允许弹出窗口后重试');
+            break;
+        }
+        case 'sound':
+            if (liveUI?.controller.getStatus().active) {
+                toast('实时陪伴会自动朗读；请先结束陪伴再切换普通朗读');
+                return;
+            }
+            updateState({sound: !getState().sound});
+            if (getState().sound) speakAsync('我在这里，慢慢说。', {onFallback: () => toast('语音合成服务暂时不可用，已改用系统语音')}).catch(() => {
+            }); else stopSpeaking();
+            break;
+        case 'focus-chat':
+            navigate('home');
+            setTimeout(() => document.querySelector('#chat-input')?.focus(), 80);
+            break;
+        case 'quick-chat':
+            talk(el.dataset.text);
+            break;
+        case 'voice':
+            voice();
+            break;
+        case 'meal-voice':
+            voice('meal');
+            break;
+        case 'rest':
+            setMood('sleepy');
+            updateState({speech: '你忙你的，我在这里安静陪着你。', activity: '陪伴'});
+            break;
+        case 'meals':
+        case 'growth':
+        case 'memories':
+            navigate(name);
+            break;
+        case 'meal-modal':
+            picture = null;
+            pictureSource = '手动确认';
+            mealModal();
+            break;
+        case 'upload-meal':
+            document.querySelector('#meal-upload').click();
+            break;
+        case 'camera':
+            await cameraModal();
+            break;
+        case 'take-photo':
+            try {
+                const v = document.querySelector('#camera-video');
+                picture = captureFrame(v);
+                pictureSource = '拍照后手动确认';
+                stopCamera(v);
+                mealModal();
+            } catch (e) {
+                toast(e.message);
+            }
+            break;
+        case 'sample-meal':
+            picture = null;
+            pictureSource = '示例餐食';
+            mealModal();
+            document.querySelector('#meal-description').value = '示例：米饭、西兰花和豆腐';
+            document.querySelectorAll('[name="groups"]').forEach(c => c.checked = ['主食', '蔬菜', '蛋白质'].includes(c.value));
+            break;
+        case 'analyze-meal': {
+            if (!picture) return;
+            pauseDemo();
+            const thisModal = modalEpoch;
+            analysisAbort = new AbortController();
+            const thisAnalysis = analysisAbort;
+            el.disabled = true;
+            el.textContent = '正在看看…';
+            try {
+                const response = await requestAI({
+                    messages: [{
+                        role: 'system',
+                        content: '请根据用户提供的餐食图片，用简短中文描述可能包含的食物，说明无法确定的部分，并给出温和的一般饮食搭配建议。不要估算精确热量、营养素或进行医学诊断。请提醒用户确认。'
+                    }, {role: 'user', content: '帮我看看这顿饭。'}], imageDataUrl: picture, signal: thisAnalysis.signal
+                });
+                if (thisModal !== modalEpoch || !modal.open) return;
+                const out = document.querySelector('#meal-analysis');
+                if (out) out.textContent = response;
+                updateState({speech: response, mood: 'curious'});
+            } catch (e) {
+                if (e.name !== 'AbortError') toast(e.message);
+            } finally {
+                if (analysisAbort === thisAnalysis) analysisAbort = null;
+                if (el.isConnected) {
+                    el.disabled = false;
+                    el.textContent = '再看看';
+                }
+            }
+            break;
+        }
+        case 'growth-stage':
+            setGrowth(Number(el.dataset.stage));
+            break;
+        case 'flower-color':
+            updateState({flowerStyle: el.dataset.color, growthStage: 3});
+            break;
+        case 'flower-count':
+            updateState({flowerCount: Number(el.dataset.count), growthStage: 3});
+            break;
+        case 'demo':
+            if (liveUI?.controller.getStatus().active) {
+                toast('先结束实时陪伴，再播放演示');
+                return;
+            }
+            navigate('home');
+            setTimeout(() => {
+                document.querySelector('#demo-panel')?.scrollIntoView({behavior: 'smooth', block: 'center'});
+                startDemo();
+            }, 80);
+            break;
+        case 'demo-play':
+            if (liveUI?.controller.getStatus().active) {
+                toast('先结束实时陪伴，再播放演示');
+                return;
+            }
+            getDemoState().paused ? resumeDemo() : startDemo();
+            render();
+            break;
+        case 'demo-pause':
+            pauseDemo();
+            render();
+            break;
+        case 'demo-stop':
+            stopDemo();
+            render();
+            break;
+        case 'demo-step':
+            if (liveUI?.controller.getStatus().active) {
+                toast('先结束实时陪伴，再播放演示');
+                return;
+            }
+            goToStep(Number(el.dataset.index));
+            render();
+            break;
+        case 'add-memory':
+            showModal('留下一点，值得记住的小事。', `<form id="memory-form"><label class="field-label" for="memory-text">你想让我记住什么？</label><textarea id="memory-text" name="text" maxlength="400" placeholder="喜欢的口味、一个小习惯，或者今天的小开心…" required></textarea><div class="modal-end"><button class="btn primary" type="submit">好好记住 ${icon('heart', 17)}</button></div></form>`);
+            break;
+        case 'delete-memory':
+            deleteMemory(el.dataset.id);
+            toast('这条记忆已删除');
+            break;
+        case 'coming-chess':
+            navigate('chess');
+            break;
+        case 'coming-craft':
+            showModal('一起做点，小小的作品。', `<div class="coming-preview"><span>${icon('sprout', 48)}</span><h3>正在慢慢准备，敬请期待。</h3><p>未来可以选择一个作品，跟着步骤慢慢做，把完成的作品收藏进共同回忆。</p>${btn('close-modal', '先回小屋坐坐', 'primary', 'home')}</div>`);
+            break;
+        case 'reset-dialog':
+            showModal('重新开始这段小日常？', `<p>这会清除当前浏览器里的聊天、回忆、餐食和自定义形象，也会同步重置已打开的投影窗口。</p><div class="modal-end">${btn('close-modal', '保留我的回忆', 'secondary')}${btn('reset-confirm', '确认清除', 'danger-button')}</div>`);
+            break;
+        case 'reset-confirm':
+            liveUI?.controller.stop();
+            requestEpoch++;
+            requestAbort?.abort();
+            requestAbort = null;
+            pending = false;
+            stopDemo();
+            resetData();
+            modal.close();
+            toast('本地陪伴数据已清除');
+            break;
+        case 'test-tts':
+            showModal('测试豆包 TTS', `<div style="display:flex;flex-direction:column;gap:12px"><label class="field-label">输入要朗读的文本</label><textarea id="tts-text" maxlength="500" style="min-height:80px;width:100%;box-sizing:border-box;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:14px;resize:vertical">你好，我是芽团，今天也很高兴见到你。</textarea><p class="analysis-result" id="tts-status" style="min-height:18px"></p><div class="button-row"><button class="btn secondary" data-action="stop-tts">停止</button><button class="btn primary" data-action="run-tts-test">▶ 播放 TTS</button></div></div>`);
+            break;
+        case 'run-tts-test': {
+            const text = (document.querySelector('#tts-text')?.value || '').trim();
+            if (!text) {
+                toast('请输入测试文字');
+                return;
+            }
+            const statusEl = document.querySelector('#tts-status');
+            if (statusEl) statusEl.textContent = '正在请求豆包 TTS…';
+            el.disabled = true;
+            const origLabel = el.textContent;
+            el.textContent = '请求中…';
+            try {
+                const res = await fetch('/api/tts', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({text: text.trim().slice(0, 1600)})
+                });
+                if (!res.ok) {
+                    const errText = await res.text().catch(() => '');
+                    if (statusEl?.isConnected) statusEl.textContent = `✗ HTTP ${res.status} — ${errText}`;
+                    return;
+                }
+                const blob = await res.blob();
+                if (statusEl?.isConnected) statusEl.textContent = `HTTP 200 · 音频 ${(blob.size / 1024).toFixed(1)} KB，正在播放…`;
+                const url = URL.createObjectURL(blob);
+                const audio = new Audio(url);
+                audio.onended = () => {
+                    URL.revokeObjectURL(url);
+                    if (statusEl?.isConnected) statusEl.textContent = `✓ 豆包 TTS 播放完成 · ${(blob.size / 1024).toFixed(1)} KB`;
+                };
+                audio.onerror = () => {
+                    URL.revokeObjectURL(url);
+                    if (statusEl?.isConnected) statusEl.textContent = '✗ 音频播放失败';
+                };
+                await audio.play();
+            } catch (e) {
+                if (statusEl?.isConnected) statusEl.textContent = '✗ 错误：' + e.message;
+                toast(e.message);
+            } finally {
+                if (el.isConnected) {
+                    el.disabled = false;
+                    el.textContent = origLabel;
+                }
+            }
+            break;
+        }
+        case 'stop-tts':
+            stopSpeaking();
+        {
+            const s = document.querySelector('#tts-status');
+            if (s) s.textContent = '已停止。';
+        }
+            break;
+        case 'capabilities':
+            showModal('这间小屋，已经准备了什么？', `<div class="capability-list"><p><b>可以直接体验</b><br>聊天界面、中文语音输入与朗读、摄像头拍照、手动确认餐食、本地偏好记忆、形象切换与上传、成长预览，以及 18 秒互动演示。</p><p><b>桌面实时联动</b><br>同一浏览器、同一网址下的控制页与投影页通过本地消息实时同步。手机网页会自动适配布局；不同设备之间尚未建立同步连接。</p><p><b>真实 AI 能力</b><br>未配置时为本地演示。接入支持视觉的模型后，进入「实时陪伴」开启语音唤醒、按间隔摄像头观察与朗读；投影视图同步表情和成长。</p><p><b>你的数据</b><br>记忆、聊天与图片存于当前浏览器。使用浏览器语音识别可能由浏览器供应商处理音频；连接 AI 服务后，提交的对话与照片会发送到该接口。开启实时陪伴并唤醒后，摄像头会按设定间隔发送餐盘帧，结束陪伴后停止。</p></div>`);
+            break;
+    }
+}
+
+app.addEventListener('click', e => {
+    const el = e.target.closest('[data-action]');
+    if (el) action(el.dataset.action, el);
+});
+modal.addEventListener('click', e => {
+    if (e.target === modal) {
+        modal.close();
+        return;
+    }
+    const el = e.target.closest('[data-action]');
+    if (el) action(el.dataset.action, el);
+});
+modal.addEventListener('close', () => {
+    modalEpoch++;
+    analysisAbort?.abort();
+    analysisAbort = null;
+    const v = document.querySelector('#camera-video');
+    if (v) stopCamera(v);
+    stopListening?.();
+});
+document.addEventListener('submit', async e => {
+    if (!['chat-form', 'meal-form', 'settings-form', 'memory-form'].includes(e.target.id)) return;
+    e.preventDefault();
+    const form = e.target, fd = new FormData(form);
+    if (form.id === 'chat-form') {
+        const text = String(fd.get('message') || '');
+        form.reset();
+        await talk(text);
+    }
+    if (form.id === 'meal-form') {
+        const description = String(fd.get('description') || '').trim();
+        if (!description) {
+            toast('先告诉我，这一餐吃了什么');
+            return;
+        }
+        pauseDemo();
+        const record = saveMeal({description, groups: fd.getAll('groups'), image: picture, source: pictureSource});
+        modal.close();
+        toast('这一餐，已经好好记住了');
+        if (getState().sound && !liveUI?.controller.getStatus().active) speakAsync(record.advice, {onFallback: () => toast('语音合成服务暂时不可用，已改用系统语音')}).catch(() => {
+        });
+    }
+    if (form.id === 'memory-form') {
+        const text = String(fd.get('text') || '').trim();
+        if (!text) return;
+        addMemory(text);
+        modal.close();
+        toast('我会记住这件小事');
+    }
+    if (form.id === 'settings-form') {
+        try {
+            if (liveUI?.controller.getStatus().active) throw new Error('先结束实时陪伴，再修改设置。');
+            const endpoint = String(fd.get('endpoint') || '').trim();
+            if (endpoint) saveAIConfig({endpoint, model: String(fd.get('model') || '')}); else clearAIConfig();
+            updateState({
+                personality: fd.get('personality'),
+                sound: fd.has('sound'),
+                projection: {
+                    scale: Number(fd.get('scale')),
+                    x: Number(fd.get('x')),
+                    y: Number(fd.get('y')),
+                    showStats: fd.has('showStats')
+                }
+            });
+            modal.close();
+            toast('设置已保存，投影视图也会同步变化');
+        } catch (err) {
+            toast(err.message);
+        }
+    }
+});
+modal.addEventListener('input', e => {
+    if (e.target.name === 'scale') e.target.nextElementSibling.textContent = e.target.value + '×';
+});
+shell();
+render();
+
+function cancelLegacyMedia() {
+    cancelListening();
+    stopSpeaking();
+    listening = false;
+    requestEpoch++;
+    requestAbort?.abort();
+    analysisAbort?.abort();
+    pending = false;
+    const v = document.querySelector('#camera-video');
+    if (v) stopCamera(v);
+    if (modal.open) modal.close();
+}
+
+liveUI = mountLiveUI({beforeStart: cancelLegacyMedia, onActive: cancelLegacyMedia});
+addEventListener('ai-config-changed', render);
+discoverLocalAI().then(() => render());
+document.querySelector('#character-upload').addEventListener('change', async e => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+        const image = await readImageFile(file, {maxSize: 720});
+        updateState({customImage: image, character: 'custom'});
+        characterModal();
+        toast('你的新伙伴，已经来到小屋');
+    } catch (err) {
+        toast(err.message);
+    }
+});
+document.querySelector('#meal-upload').addEventListener('change', async e => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+        picture = await readImageFile(file);
+        pictureSource = '上传后手动确认';
+        const v = document.querySelector('#camera-video');
+        if (v) stopCamera(v);
+        mealModal();
+    } catch (err) {
+        toast(err.message);
+    }
+});
+addEventListener('hashchange', () => {
+    view = location.hash.slice(1) || 'home';
+    render();
+    window.scrollTo({top: 0, behavior: 'instant'});
+});
 subscribe(render);
-let demoSignature='';subscribeDemo(d=>{const signature=`${d.running}/${d.paused}/${d.index}/${d.done}`;if(signature!==demoSignature){demoSignature=signature;if(document.querySelector('#demo-panel')){const focused=document.activeElement?.id;document.querySelector('#demo-panel').outerHTML=demoPanel();if(focused)document.getElementById(focused)?.focus({preventScroll:true});}}const bar=document.querySelector('.demo-progress i');if(bar)bar.style.width=d.progress*100+'%';});
-addEventListener('storage-warning',()=>toast('浏览器暂时无法保存全部数据；当前页面仍可继续体验。'));
-addEventListener('pagehide',()=>{requestEpoch++;requestAbort?.abort();analysisAbort?.abort();stopListening?.();if(isDemoOwner())stopDemo();});
+let demoSignature = '';
+subscribeDemo(d => {
+    const signature = `${d.running}/${d.paused}/${d.index}/${d.done}`;
+    if (signature !== demoSignature) {
+        demoSignature = signature;
+        if (document.querySelector('#demo-panel')) {
+            const focused = document.activeElement?.id;
+            document.querySelector('#demo-panel').outerHTML = demoPanel();
+            if (focused) document.getElementById(focused)?.focus({preventScroll: true});
+        }
+    }
+    const bar = document.querySelector('.demo-progress i');
+    if (bar) bar.style.width = d.progress * 100 + '%';
+});
+addEventListener('storage-warning', () => toast('浏览器暂时无法保存全部数据；当前页面仍可继续体验。'));
+addEventListener('pagehide', () => {
+    requestEpoch++;
+    requestAbort?.abort();
+    analysisAbort?.abort();
+    stopListening?.();
+    if (isDemoOwner()) stopDemo();
+});
