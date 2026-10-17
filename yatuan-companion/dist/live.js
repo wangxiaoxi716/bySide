@@ -9,9 +9,9 @@ const CONFIG_KEY = 'yatuan:live-config:v1';
 export function getLiveConfig() { try { return normalizeLiveConfig(JSON.parse(localStorage.getItem(CONFIG_KEY) || '{}')); } catch { return normalizeLiveConfig(); } }
 export function saveLiveConfig(value) { const c = normalizeLiveConfig(value); localStorage.setItem(CONFIG_KEY, JSON.stringify(c)); return c; }
 export async function discoverLocalAI() {
-  if (!['localhost', '127.0.0.1'].includes(globalThis.location?.hostname)) return null;
+  if (!['http:', 'https:'].includes(globalThis.location?.protocol)) return null;
   try {
-    const response = await fetch('/api/health', { signal: AbortSignal.timeout(2500), cache: 'no-store' });
+    const response = await fetch('/api/health', { signal: AbortSignal.timeout(10000), cache: 'no-store' });
     if (!response.ok) return null;
     const data = await response.json();
     if (data.configured === true && !getAIConfig().endpoint) saveAIConfig({ endpoint: '/api/chat/completions', model: '' });
