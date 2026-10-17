@@ -5,7 +5,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const MAX_BODY_BYTES = 2 * 1024 * 1024;
-const ENV_KEYS = new Set(['YATUAN_AI_ENDPOINT', 'YATUAN_AI_MODEL', 'YATUAN_AI_KEY']);
+const ENV_KEYS = new Set(['YATUAN_AI_ENDPOINT', 'YATUAN_AI_MODEL', 'YATUAN_AI_KEY', 'YATUAN_TTS_KEY']);
+const TTS_MAX_AUDIO_BYTES = 5 * 1024 * 1024;
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.gif': 'image/gif', '.ico': 'image/x-icon', '.woff2': 'font/woff2', '.mp4': 'video/mp4', '.webm': 'video/webm' };
 
 class RequestError extends Error {
@@ -37,14 +38,15 @@ export function makeConfig(values = {}, { allowLocalUpstream = false } = {}) {
   const endpoint = String(values.YATUAN_AI_ENDPOINT || '').trim();
   const model = String(values.YATUAN_AI_MODEL || '').trim();
   const key = String(values.YATUAN_AI_KEY || '').trim();
-  const unconfigured = { configured: false, endpoint: '', model: '', key: '' };
+  const ttsKey = String(values.YATUAN_TTS_KEY || '').trim();
+  const unconfigured = { configured: false, endpoint: '', model: '', key: '', ttsKey };
   if (!endpoint || !model || !key) return unconfigured;
   if (endpoint.length > 2048 || model.length > 120 || key.length > 4096 || /[\s\\\u0000-\u001f\u007f]/.test(endpoint) || /[\u0000-\u001f\u007f]/.test(model + key)) throw new Error('AI 配置格式不正确，请检查本地 .env。');
   let url;
   try { url = new URL(endpoint); } catch { throw new Error('AI 接口地址格式不正确。'); }
   const localMock = allowLocalUpstream && url.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
   if ((url.protocol !== 'https:' && !localMock) || url.username || url.password || url.search || url.hash || endpoint.includes('?') || endpoint.includes('#')) throw new Error('AI 接口必须使用不含认证信息、查询参数或片段的 HTTPS 完整地址。');
-  return { configured: true, endpoint: url.href, model, key };
+  return { configured: true, endpoint: url.href, model, key, ttsKey };
 }
 
 function json(res, status, data) {
@@ -175,6 +177,55 @@ export function createYatuanServer({ config = makeConfig(), distDir = path.join(
           if (error instanceof RequestError) throw error;
           throw new RequestError(502, '无法连接 AI 服务，请检查网络和本机接口配置。', 'upstream_error');
         } finally { clearTimeout(timer); res.removeListener('close', disconnect); active -= 1; }
+        return;
+      }
+      if (url.pathname === '/api/tts') {
+        if (req.method !== 'POST') throw new RequestError(405, '此接口仅支持 POST。');
+        if (req.headers.origin !== base || req.headers['sec-fetch-site'] === 'cross-site') throw new RequestError(403, '请从本机芽团页面发起 TTS 请求。', 'forbidden_origin');
+        if (!/^application\/json(?:\s*;|$)/i.test(req.headers['content-type'] || '')) throw new RequestError(415, '请求需使用 application/json。');
+        if (!config.ttsKey) { req.resume(); throw new RequestError(503, '尚未配置 TTS 密钥，请在本机 .env 中填写 YATUAN_TTS_KEY 后重启服务。', 'not_configured'); }
+        const body = await readJson(req);
+        const text = String(body.text || '').trim().slice(0, 1600);
+        if (!text) throw new RequestError(400, '请提供要合成的文字。');
+        const controller = new AbortController();
+        let timedOut = false;
+        const timer = setTimeout(() => { timedOut = true; controller.abort(); }, 30_000);
+        const disconnect = () => { if (!res.writableEnded) controller.abort(); };
+        res.once('close', disconnect);
+        try {
+          const upstream = await fetchImpl('https://openspeech.bytedance.com/api/v3/tts/unidirectional', {
+            method: 'POST',
+            headers: { 'X-Api-Key': config.ttsKey, 'X-Api-Resource-Id': 'seed-tts-2.0', 'Content-Type': 'application/json', 'Connection': 'keep-alive' },
+            body: JSON.stringify({ req_params: { text, speaker: 'zh_female_vv_uranus_bigtts', audio_params: { format: 'mp3', sample_rate: 24000 } } }),
+            signal: controller.signal,
+            redirect: 'error',
+          });
+          if (!upstream.ok) { await upstream.body?.cancel(); throw new RequestError(upstream.status === 429 ? 429 : 502, 'TTS 服务未能处理请求，请检查密钥和配额。', 'upstream_error'); }
+          const responseText = await upstream.text();
+          const audioChunks = [];
+          for (const line of responseText.split('\n')) {
+            const trimmed = line.trim();
+            if (!trimmed) continue;
+            let chunk;
+            try { chunk = JSON.parse(trimmed); } catch { continue; }
+            console.error('[TTS chunk]', JSON.stringify({ code: chunk.code,
+              codeType: typeof chunk.code, msg: chunk.message, hasData: !!chunk.data
+            }));
+            if (chunk.code === 20000000) continue;
+            if (chunk.code !== 0) throw new RequestError(502, `TTS 服务错误：${chunk.message || chunk.code}`, 'upstream_error');
+            if (chunk.data) audioChunks.push(Buffer.from(chunk.data, 'base64'));
+          }
+          if (!audioChunks.length) throw new RequestError(502, 'TTS 服务未返回音频数据。', 'upstream_error');
+          const audioBuffer = Buffer.concat(audioChunks);
+          if (audioBuffer.length > TTS_MAX_AUDIO_BYTES) throw new RequestError(502, '音频数据过大。', 'upstream_error');
+          res.writeHead(200, { 'Content-Type': 'audio/mpeg', 'Content-Length': audioBuffer.length, 'Cache-Control': 'no-store' });
+          res.end(audioBuffer);
+        } catch (error) {
+          if (timedOut) throw new RequestError(504, 'TTS 服务响应超时，请稍后重试。', 'upstream_timeout');
+          if (res.destroyed || res.writableEnded) return;
+          if (error instanceof RequestError) throw error;
+          throw new RequestError(502, '无法连接 TTS 服务，请检查网络和密钥配置。', 'upstream_error');
+        } finally { clearTimeout(timer); res.removeListener('close', disconnect); }
         return;
       }
       if (url.pathname.startsWith('/api/')) throw new RequestError(404, '接口不存在。');

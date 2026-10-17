@@ -1,5 +1,16 @@
-.venv/
-__pycache__/
-*.pyc
 .env
 .DS_Store
+
+# Node
+node_modules/
+
+# Java（保留代码，忽略构建产物）
+target/
+*.class
+*.jar
+*.war
+
+# IDE
+.idea/
+*.iml
+.vscode/

@@ -27,6 +27,13 @@ npm run check
 npm test
 ```
 
-## Java 后端
+## 技术栈
 
-已有 Java 服务保留在 `src/`，Maven 配置为 `pom.xml`。芽团本机演示当前使用其目录内的 Node.js 代理，尚未直接对接这套 Java 接口。
+本项目前后端统一使用 Node.js：
+
+- 前端：`yatuan-companion/dist/` 下的原生 HTML / CSS / JavaScript，无构建步骤。
+- 后端：`yatuan-companion/server.mjs`，零第三方依赖的 HTTP 服务，负责静态托管与 AI 代理转发。
+
+## 关于 Java 代码（已弃用）
+
+`src/` 与 `pom.xml` 是早期的 Java 后端实现，**已停止维护**，仅作为参考保留，不参与运行、构建与测试。前端不再对接它，请勿据此排查问题。后续如需清理，可直接删除这两个路径。
