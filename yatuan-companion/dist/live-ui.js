@@ -121,7 +121,7 @@ export function mountLiveUI({ beforeStart = () => {}, onActive = () => {} } = {}
     else controller.handleText(text);
   });
   panel.addEventListener('click', event => { if (event.target === panel) panel.close(); });
-  panel.addEventListener('close', () => testAbort?.abort());
+  panel.addEventListener('close', () => { testAbort?.abort(); if (controller.getStatus().active) controller.stop(); });
   addEventListener('pagehide', () => { testAbort?.abort(); controller.destroy(); });
   loadFields();
   return { controller, open() { loadFields(); if (!panel.open) panel.showModal(); } };
