@@ -4,6 +4,8 @@
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#6e8149"><title>芽团 · 棋盘上的小搭子</title>
   <link rel="icon" href="icon.svg"><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="chess.css"><link rel="stylesheet" href="chess-vision.css">
+  <script>try{if(window.self!==window.top)document.documentElement.classList.add('embedded');}catch(e){document.documentElement.classList.add('embedded');}</script>
+  <style>.embedded .chess-rail{display:none}.embedded .chess-workspace{margin-left:0}</style>
 </head>
 <body class="chess-page">
   <aside class="chess-rail">
@@ -18,7 +20,7 @@
     <a class="rail-back" href="./#activities"><span data-icon="arrow"></span>回到更多陪伴</a>
   </aside>
   <div class="chess-workspace">
-    <header class="chess-topbar"><div class="chess-crumb">更多陪伴 <span>/</span> <b>棋盘上的小搭子</b></div><div class="chess-top-actions"><span class="local-pill"><i></i>本地体验</span><a id="projection-open" class="chess-button secondary" target="_blank" rel="noopener"><span data-icon="projector"></span><span>棋局投影</span></a></div></header>
+    <a id="projection-open" style="display:none" target="_blank" rel="noopener"></a>
     <main class="chess-main">
       <section class="chess-heading"><div><p class="chess-eyebrow">THE LITTLE CHESS CLUB <span>✦</span></p><h1>给彼此，留一盘棋的时间。</h1><p>认真做你的对手，也做那个陪你慢慢想的人。</p></div><div class="heading-flower" aria-hidden="true"><span>✳</span><small>不着急，慢慢来</small></div></section>
       <section class="chess-modebar" aria-label="陪伴方式">
