@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Write(/requirements.txt)",
+      "Write(/.env.example)"
+    ]
+  }
+}

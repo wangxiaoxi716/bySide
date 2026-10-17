@@ -1,0 +1,22 @@
+server:
+  port: ${APP_PORT:8000}
+
+spring:
+  application:
+    name: byside
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+
+llm:
+  api-key: ${JDC_API_KEY:}
+  base-url: ${JDC_BASE_URL:https://modelservice.jdcloud.com/v1}
+  model: ${JDC_MODEL:DeepSeek-V4-Flash-0731}
+  vision-model: ${JDC_VISION_MODEL:qwen3-vl-235}
+  connect-timeout: 10s
+  read-timeout: ${LLM_TIMEOUT:120s}
+
+logging:
+  level:
+    com.byside: INFO
