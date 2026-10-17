@@ -1,0 +1,10 @@
+{
+  "$schema": "https://unpkg.com/wrangler@4/config-schema.json",
+  "name": "byside",
+  "pages_build_output_dir": "./dist",
+  "compatibility_date": "2026-08-06",
+  "vars": {
+    "YATUAN_AI_ENDPOINT": "https://api.deepseek.com/chat/completions",
+    "YATUAN_AI_MODEL": "deepseek-flash"
+  }
+}

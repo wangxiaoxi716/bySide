@@ -20,7 +20,7 @@ export function mountLiveUI({ beforeStart = () => {}, onActive = () => {} } = {}
   <div class="live-metrics"><span id="live-frames">已拍摄 0 帧</span><span id="live-requests">已请求 0 次</span><span id="live-last">尚未观察</span></div>
   <form class="live-chat"><input id="live-text" aria-label="实时陪伴文字输入" placeholder="也可以输入：帮我看看盘子里有什么" maxlength="1000"><button class="btn primary" type="submit">发送</button></form>
 
-  <details class="live-connection"><summary>AI 服务连接</summary><p class="field-hint">本机方案填 /api/chat/completions；API Key 只保存在电脑的 .env 文件。在线私有站点需要另行部署 HTTPS 代理。</p><label class="field-label" for="live-endpoint">代理接口地址</label><input id="live-endpoint" autocomplete="off" placeholder="/api/chat/completions"><label class="field-label" for="live-model">模型（本机代理以 .env 为准）</label><input id="live-model" autocomplete="off" placeholder="deepseek-flash"><div class="button-row"><button type="button" class="btn secondary small" data-live="save-ai">保存连接</button><button type="button" class="btn secondary small" data-live="test-ai">测试文字连接</button></div><p class="field-hint" id="live-ai-result"></p></details>
+  <details class="live-connection"><summary>AI 服务连接</summary><p class="field-hint">本站服务地址为 /api/chat/completions，会自动连接。API Key 由服务端保存，网页无需填写。</p><label class="field-label" for="live-endpoint">代理接口地址</label><input id="live-endpoint" autocomplete="off" placeholder="/api/chat/completions"><label class="field-label" for="live-model">模型（以服务端配置为准）</label><input id="live-model" autocomplete="off" placeholder="deepseek-flash"><div class="button-row"><button type="button" class="btn secondary small" data-live="save-ai">保存连接</button><button type="button" class="btn secondary small" data-live="test-ai">测试文字连接</button></div><p class="field-hint" id="live-ai-result"></p></details>
   <a class="live-guide-link" href="help.html" target="_blank" rel="noopener">${icon('book',17)} 查看接线、DeepSeek 配置和使用说明 ${icon('arrow',16)}</a></div>`;
   document.body.append(panel);
   const $ = selector => panel.querySelector(selector);
@@ -41,7 +41,7 @@ export function mountLiveUI({ beforeStart = () => {}, onActive = () => {} } = {}
     const config = getLiveConfig(), ai = getAIConfig();
     $('#live-interval').value = String(config.intervalSeconds);
     $('#live-wake').value = config.wakePhrase;
-    $('#live-endpoint').value = ai.endpoint || (['localhost', '127.0.0.1'].includes(location.hostname) ? '/api/chat/completions' : '');
+    $('#live-endpoint').value = ai.endpoint || '/api/chat/completions';
     $('#live-model').value = ai.model;
     refreshCameras();
   }
@@ -81,7 +81,7 @@ export function mountLiveUI({ beforeStart = () => {}, onActive = () => {} } = {}
     try {
       beforeStart();
       const health = await discoverLocalAI();
-      if(health?.configured === false && (!getAIConfig().endpoint || getAIConfig().endpoint === '/api/chat/completions')) throw new Error('本机 AI 尚未配置：在 .env 中填入 DeepSeek Key 后重启服务。请查看下方接线与配置说明。');
+      if(health?.configured === false && (!getAIConfig().endpoint || getAIConfig().endpoint === '/api/chat/completions')) throw new Error('AI 服务尚未配置：请由站点管理员配置服务端密钥。本机运行时可在 .env 中填写后重启服务。');
       await controller.start(video);
       await refreshCameras();
       await controller.wake();
