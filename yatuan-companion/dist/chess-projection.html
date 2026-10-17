@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#000000">
+  <title>芽团棋桌 · 投影</title>
+  <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./chess-view.css">
+</head>
+<body class="cv-projection" data-chess-view="projection">
+  <main class="cv-project-corner">
+    <div class="cv-project-companion"><div class="cv-project-rug"></div><div class="cv-project-pet" id="projection-chess-pet"></div><div class="cv-project-bubble" id="projection-chess-speech" aria-live="polite">请从棋室打开投影。</div><div class="cv-project-status" id="projection-chess-status" role="status">等待棋室</div></div>
+    <div class="cv-project-board-area" id="projection-chess-board-area"><div class="cv-project-board" id="projection-chess-board" aria-label="同步棋盘"></div><div class="cv-project-calibration" id="projection-calibration-markers" hidden aria-hidden="true"><span data-corner="A1"><b>A1</b></span><span data-corner="O1"><b>O1</b></span><span data-corner="O15"><b>O15</b></span><span data-corner="A15"><b>A15</b></span></div><div class="cv-project-board-caption"><span id="projection-chess-turn">尚未开始</span><small id="projection-chess-moves">第 0 手</small></div></div>
+  </main>
+  <nav class="cv-project-tools" aria-label="投影控制"><a href="./chess.html" id="projection-chess-back" title="原棋室仍在原标签页">新开棋室</a><button id="projection-toggle-board" aria-pressed="true">隐藏棋盘</button><button id="projection-toggle-calibration" aria-pressed="false">显示标定角标</button><button id="projection-fullscreen">进入全屏</button></nav>
+  <script type="module" src="./chess-view.js"></script>
+</body>
+</html>

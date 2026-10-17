@@ -1,0 +1,4 @@
+# Optional local inference dependencies. No model weights are included.
+ultralytics>=8.3,<9
+onnxruntime>=1.18,<2
+Pillow>=10,<13

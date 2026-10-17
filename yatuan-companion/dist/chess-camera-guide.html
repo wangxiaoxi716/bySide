@@ -1,0 +1,33 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>芽团 · 实物落子连接说明</title><link rel="icon" href="icon.svg"><style>body{background:#f5f5ed;color:#4c5f3b;font:15px/1.9 system-ui,"PingFang SC",sans-serif;margin:0}main{max-width:800px;margin:35px auto;padding:35px;background:#fffef8;border:1px solid #e1e5d5;border-radius:23px}h1{font-size:28px}h2{font-size:19px;margin-top:30px}p,li{color:#849171}a{color:#748e50}aside{padding:17px 20px;background:#edf1e0;border-radius:12px;color:#748758}code{background:#eff2e6;padding:2px 5px;border-radius:4px;font-size:12px}pre{padding:18px;background:#283724;color:#e2eccc;border-radius:12px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px}table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:10px;border-bottom:1px solid #e5e9db;text-align:left}small{color:#a2ad92}@media(max-width:650px){main{margin:12px;padding:22px}h1{font-size:24px}}</style></head><body><main>
+<a href="chess.html">← 新开芽团棋室</a><h1>把真实的那颗黑子，落进同一盘棋。</h1>
+<aside>电脑通过线缆连接投影仪，USB 摄像头拍摄桌面。棋盘投影位于整屏中央；摄像头控制和坐标表在电脑棋室里。所有识别画面只在本机处理，不会发送给聊天 API。</aside>
+<h2>先区分两种识别方式</h2><table><thead><tr><th>方式</th><th>需要什么</th><th>当前状态</th></tr></thead><tbody><tr><td>空盘参照辅助识别</td><td>固定摄像头、光线和一张空盘参照</td><td>可先试用；这是图像差分算法，不是 YOLO</td></tr><tr><td>YOLO 棋子检测</td><td>本机推理服务、专门训练的黑子模型</td><td>接口已接入；项目没有自带训练好的棋子模型</td></tr></tbody></table>
+<p>四角标定用于计算坐标，YOLO 用于检测黑子的边界框，两者是不同步骤。普通通用目标检测模型不能直接当成已经验证的棋子识别模型。当前辅助识别也需要现场检查误检与漏检。</p>
+<h2>第一次连接：建议用 Chrome</h2><ol>
+<li>保持原网页服务运行：<code>npm run dev</code>。打开 <a href="chess.html">本地棋室</a>，选择“和芽团下棋”。</li>
+<li>点击“棋局投影”，将投影窗口拖到投影仪扩展屏，先选好全屏和棋盘尺寸。若有多个投影窗口，在实际投到桌面的那一个点击“用于实物识别”。</li>
+<li>在电脑页面展开“实物黑子 · 摄像头落子”，选择 USB 摄像头并点击“连接摄像头”。允许摄像头权限即可，不需要麦克风。</li>
+<li>倒置画面可选“旋转 180°”。在投影右下角打开“显示标定角标”，让 A1、O1、O15、A15 可见。</li>
+<li>点击“拍照标定四角”。在摄像头快照里依次点 <strong>A1 → O1 → O15 → A15</strong>，点最外侧交叉点，不是装饰外框。摄像头四周应留至少约一格的空白。</li>
+<li>核对叠加的 225 个绿点是否对齐全部交叉点，点击“确认这 225 个交叉点”。下方可查看四角、每个点的相机与投影坐标，并导出 JSON。</li>
+<li>辅助模式：新局清空所有实体棋子，移开手，点击“记录空棋盘”。再点“开始实物落子”，等到“准备好了”后放下一颗黑子并移开手。</li>
+<li>辅助识别先检测完整黑子，再判断它实际覆盖的交叉点；覆盖唯一点即可，不要求中心精确重合。未覆盖时仍可按中心容差匹配。至少 3 个有效帧且累计有效时长达到 700 毫秒后落子；最多容忍 2 帧、1200 毫秒内的短暂漏检，漏检时间不计入确认时长，恢复后还需连续看清 2 帧。合法黑子进入棋局，芽团随后下白子；电脑网页与投影同时更新。白子由投影显示，不需要手动摆白子。</li>
+</ol>
+<h2>从你给的照片开始</h2><p>“导入棋盘照片”可以验证同一张照片里的四角与交点，不会自动修改棋局。空盘照片完成标定后可记录为空盘参照，再导入同方向、同尺寸、同拍摄位置的有子照片，点击“检查这一帧”。自动落子只使用实时摄像头。</p>
+<p>已用你提供的 17:02 空盘与 17:05 有子照片验证：中央黑色方片对应 <strong>H8</strong>。支持圆形棋子与这种紧凑方片。此结果是这两张照片的辅助识别验证，不代表 YOLO 模型或连续实拍已经验证完成。</p>
+<p>“导入四角坐标”可读取之前导出的坐标 JSON。先导入照片，再选择你保存的坐标 JSON，核对绿点后点击确认。文件中的原图坐标会随当前画面的缩放与 180° 方向自动换算。换成实时摄像头后仍需重新核对四角；拍摄位置、画面比例或投影尺寸改变时不能直接沿用。</p>
+<p>你的照片是 180° 倒置视角；可以转正后标定，也可以不旋转、按角标实际位置选择。导出的相机坐标属于当前识别画面，JSON 同时保存原始图片坐标、缩放和方向信息。</p>
+<h2>实物落子和网页点击如何共存</h2><p>电脑页面是唯一棋局控制端。网页点击与识别结果都经过同样的空位、轮次、胜负判断，再通知投影。相机重复看到已有黑子或投影出来的黑子，不会重复落子。检测到多枚新黑子、位置偏离交叉点或辅助识别存在明显不确定变化时，会等待你整理棋盘。</p>
+<p>悔棋后需要移走被撤回的实体黑子，再重新开启。新局需要清空实体棋子、重新记录空盘。移动摄像头、投影仪或改变画面方向、投影窗口和棋盘尺寸后，必须重新标定；系统不能从静态坐标自动知道物理设备被挪动。</p>
+<h2>接入 YOLO 模型</h2><p>新增服务独立于原来的聊天后端和 <code>.env</code>，不需要 DeepSeek 或其他 API Key。没有模型也可启动健康检查，但会如实显示“模型未配置”，不会输出假的棋子坐标。先在终端进入项目根目录，再运行：</p><pre>python3 vision/chess_yolo_service.py</pre>
+<p>拿到模型后，安装独立环境并运行（完整说明见项目 <code>vision/README.md</code>）：</p><pre>python3 -m venv "$HOME/.venvs/yatuan-vision"
+source "$HOME/.venvs/yatuan-vision/bin/activate"
+python -m pip install -r vision/requirements.txt
+python vision/chess_yolo_service.py \
+  --model /你的本机路径/black-stones.pt \
+  --classes black_stone</pre>
+<p>网页使用固定服务地址 <code>http://127.0.0.1:4181</code>。在页面选择“YOLO · 本机棋子模型”，点击“检查 YOLO 模型”。只有模型确实加载成功且明确配置黑子类别时才可开始。若网页通过 <code>localhost</code> 打开，启动服务时加 <code>--origin http://localhost:4173</code>。</p>
+<p>模型需要针对实际投影、桌面、方片或棋子、反光和手遮挡采集训练与验证数据。连续多帧稳定不等于证明手已经移开。先试摆角落、边缘、中心的棋子，核对坐标，再做演示。模型格式与输出可参考 <a href="https://docs.ultralytics.com/tasks/detect/">Ultralytics 检测文档</a>与<a href="https://docs.ultralytics.com/modes/predict/">推理结果说明</a>。</p>
+<h2>为什么没有自动落子</h2><ul><li>先看状态文字：照片模式、未标定、未记录空盘、模型未就绪都不会落子。绿色框表示黑子候选，黄色框表示看到了暗物但位置或形状仍需确认。</li><li>展开“查看已记录的空盘”，核对参照中没有黑子。开始后先移开新黑子，等基线确认完成，再放下；不要一开始就把待识别黑子摆在空位上。</li><li>轮到芽团、演示中、对局结束时，相机不会插入黑子。</li><li>辅助识别出现漏检：检查四角是否对齐、手是否移开、摄像头是否固定、空盘参照是否过期，再适当调低灵敏度数值；出现阴影误检则调高。</li><li>投影窗口关闭、隐藏棋盘或更换识别窗口，会要求重新确认标定。</li></ul>
+<p><small>本次只扩展芽团五子棋和棋局投影。家人 mock、原有 AI 陪伴、饮食识别、记忆与成长数据保持独立。</small></p>
+</main></body></html>

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#6e8149"><title>芽团 · 棋盘上的小搭子</title>
+  <link rel="icon" href="icon.svg"><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="chess.css"><link rel="stylesheet" href="chess-vision.css">
+</head>
+<body class="chess-page">
+  <aside class="chess-rail">
+    <a class="chess-brand" href="./"><img src="icon.svg" alt=""><span>芽团<small>桌边的陪伴</small></span></a>
+    <p class="rail-label">一起过日子</p>
+    <a href="./#home"><span data-icon="home"></span>陪伴小屋</a>
+    <a href="./#meals"><span data-icon="bowl"></span>一起吃饭</a>
+    <a href="./#growth"><span data-icon="sprout"></span>成长花园</a>
+    <a href="./#memories"><span data-icon="book"></span>我们的回忆</a>
+    <a class="current" href="chess.html" aria-current="page"><span data-icon="spark"></span>棋盘小搭子<i></i></a>
+    <div class="rail-poem"><span data-icon="leaf"></span><p>一颗棋子，<br>也是一句「我在」。</p><small>A LITTLE TIME TOGETHER</small></div>
+    <a class="rail-back" href="./#activities"><span data-icon="arrow"></span>回到更多陪伴</a>
+  </aside>
+  <div class="chess-workspace">
+    <header class="chess-topbar"><div class="chess-crumb">更多陪伴 <span>/</span> <b>棋盘上的小搭子</b></div><div class="chess-top-actions"><span class="local-pill"><i></i>本地体验</span><a id="projection-open" class="chess-button secondary" target="_blank" rel="noopener"><span data-icon="projector"></span><span>棋局投影</span></a></div></header>
+    <main class="chess-main">
+      <section class="chess-heading"><div><p class="chess-eyebrow">THE LITTLE CHESS CLUB <span>✦</span></p><h1>给彼此，留一盘棋的时间。</h1><p>认真做你的对手，也做那个陪你慢慢想的人。</p></div><div class="heading-flower" aria-hidden="true"><span>✳</span><small>不着急，慢慢来</small></div></section>
+      <section class="chess-modebar" aria-label="陪伴方式">
+        <div class="chess-tabs" role="group" aria-label="选择对弈伙伴"><button data-mode="pet" class="selected" aria-pressed="true"><span data-icon="sprout"></span><span>和芽团下棋<small>一个随时在的小搭子</small></span></button><button data-mode="family" aria-pressed="false"><span data-icon="heart"></span><span>和家人一起<small>异地陪伴 · 本机模拟</small></span></button></div>
+        <div class="mode-options"><label for="chess-level">陪练风格</label><select id="chess-level"><option value="gentle">轻松陪练</option><option value="balanced">认真对弈</option></select><button id="rules-open" class="round-help" aria-label="查看五子棋规则">?</button></div>
+      </section>
+      <section id="family-banner" class="family-banner" hidden><div class="family-banner-icon" data-icon="link"></div><div><strong>隔着两张桌子，也能一起下一盘。</strong><p>当前是本机模拟，没有连接真实家人。打开长辈端，可在两个窗口分别落子。</p></div><a id="family-open" class="chess-button secondary" target="_blank" rel="noopener">打开长辈端<span data-icon="arrow"></span></a></section>
+      <div class="chess-layout">
+        <section class="board-card" aria-label="五子棋对局">
+          <div class="player-strip"><div class="player" id="you-player"><span class="player-avatar you-avatar">我</span><div><strong>你<span class="stone-dot black-dot"></span></strong><small>执黑 · 先手</small></div></div><div class="turn-center"><span id="turn-label" role="status">轮到你落子</span><small id="move-count">第 1 手 · 从这里开始</small></div><div class="player opponent-player" id="other-player"><div><strong id="opponent-name">芽团<span class="stone-dot white-dot"></span></strong><small id="opponent-subtitle">执白 · 轻松陪练</small></div><span class="player-avatar pet-avatar" id="opponent-avatar"><img src="icon.svg" alt=""></span></div></div>
+          <div class="board-surround"><div class="board-frame"><div class="board-axes top-axes" id="top-axes" aria-hidden="true"></div><div class="board-axes side-axes" id="side-axes" aria-hidden="true"></div><div class="board-surface" id="board-surface"><svg id="board-lines" viewBox="0 0 600 600" aria-hidden="true"></svg><div class="chess-grid" id="chess-grid" role="group" aria-label="15 路五子棋棋盘；方向键移动，回车落子"></div><svg class="win-overlay" id="win-overlay" viewBox="0 0 600 600" aria-hidden="true"></svg></div></div></div>
+          <div class="board-caption"><span><i class="small-leaf"></i>五子连成一线，就赢啦</span><span id="last-move">第一颗棋子，放在哪里都好。</span></div>
+          <div class="board-tools"><div><button id="undo-button" class="chess-button secondary"><span data-icon="reset"></span>悔一步</button><button id="hint-button" class="chess-button secondary"><span data-icon="spark"></span>给点提示</button><button id="restart-button" class="chess-button text-button"><span data-icon="plus"></span>新的一局</button></div><label class="confirm-switch"><input id="confirm-move" type="checkbox"><span></span>落子前确认</label></div>
+          <div id="placement-bar" class="placement-bar" hidden><span id="placement-label">选择一个位置</span><button id="place-button" class="chess-button primary">就下这里<span data-icon="check"></span></button></div>
+          <div id="result-banner" class="result-banner" role="status" hidden></div>
+        </section>
+        <aside class="chess-aside">
+          <section class="buddy-card"><div class="buddy-title"><span><i></i><b id="buddy-title">芽团的小棋桌</b></span><span data-icon="spark"></span></div><div class="buddy-scene"><span class="scene-orbit orbit-one"></span><span class="scene-orbit orbit-two"></span><div class="buddy-rug"></div><div id="chess-pet" class="chess-pet"></div><span class="tiny-cup" aria-hidden="true">☕</span></div><div class="buddy-bubble" id="pet-speech" role="status">小棋盘准备好啦。你先来，我陪你慢慢想。</div><div class="buddy-footer"><span><i class="stone-dot black-dot"></i>想一想，也是一种陪伴</span><span>🌱</span></div></section>
+          <section id="family-card" class="family-card" hidden><div class="family-person"><div id="elder-avatar"></div><div><strong>奶奶的棋桌</strong><p><i></i><span id="family-status">模拟对手 · 自动落子</span></p></div><span class="mock-chip">MOCK</span></div><p id="elder-speech">小板凳搬来啦，今天陪我下一盘？</p><label class="family-control"><input id="family-auto" type="checkbox" checked>模拟长辈自动落子</label></section>
+          <section class="chess-chat-card"><div class="chat-card-title"><h2 id="chat-title">棋盘旁，说说话</h2><span data-icon="chat"></span></div><div class="chess-messages" id="chess-messages" role="log" aria-live="polite"></div><div class="chess-quick" id="chess-quick"></div><form id="chess-chat"><label class="sr-only" for="chess-chat-input">棋盘旁的聊天</label><input id="chess-chat-input" maxlength="140" placeholder="慢慢下，也慢慢聊…" autocomplete="off"><button aria-label="发送棋桌消息"><span data-icon="send"></span></button></form><p class="chat-fine" id="chat-fine">芽团会根据棋局回应你的提示与鼓励请求。</p></section>
+        </aside>
+      </div>
+      <section id="chess-vision-section" class="chess-vision-entry">
+        <details class="chess-vision-panel"><summary>实物黑子 · 摄像头落子<span>在桌面上下一盘</span></summary><p class="chess-vision-intro">在电脑端启动拍摄棋盘的摄像头，标定四个角后，用真实黑子落子。电脑点击与摄像头识别共用同一盘棋，芽团的白子和你的每一步都会同步到投影。</p><div id="chess-vision-root"></div></details>
+      </section>
+      <section class="chess-bottom"><div><span data-icon="heart"></span><p><strong>没有倒计时的陪伴</strong><small>走快一点、想久一点，都没有关系。</small></p></div><button id="demo-button"><span class="demo-play" data-icon="play"></span><p><strong>先看一盘小演示</strong><small>约 18 秒，看落子、回应和五连绽放</small></p><span data-icon="arrow"></span></button></section>
+      <footer class="chess-footer"><span>一盘棋的时间，刚刚好。</span><a href="chess-guide.html">体验说明<span data-icon="arrow"></span></a></footer>
+    </main>
+  </div>
+  <div class="chess-toast" id="chess-toast" role="status" hidden></div>
+  <dialog id="chess-dialog" class="chess-dialog"><div id="dialog-content"></div><div class="dialog-actions"><button id="dialog-cancel" class="chess-button secondary">先不换</button><button id="dialog-confirm" class="chess-button primary">开始新的一局</button></div></dialog>
+  <script type="module" src="chess.js"></script>
+</body></html>
