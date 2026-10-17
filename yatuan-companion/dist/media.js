@@ -359,16 +359,77 @@ function beginSpeech(text, { signal, onStart } = {}) {
   }
 }
 
+let ttsAudio = null;
+let ttsAbort = null;
+
+async function beginTTS(text, { signal, onStart, onFallback } = {}) {
+  if (typeof text !== 'string' || !text.trim()) return { status: 'unavailable' };
+  if (signal?.aborted) return { status: 'cancelled' };
+  stopSpeaking();
+  const abort = new AbortController();
+  ttsAbort = abort;
+  const onSignalAbort = () => abort.abort();
+  signal?.addEventListener('abort', onSignalAbort, { once: true });
+  try {
+    const response = await fetch('/api/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: text.trim().slice(0, 1600) }),
+      signal: abort.signal,
+    });
+    if (!response.ok) {
+      if (ttsAbort === abort) ttsAbort = null;
+      signal?.removeEventListener('abort', onSignalAbort);
+      call(onFallback);
+      return beginSpeech(text, { signal, onStart }).promise;
+    }
+    const blob = await response.blob();
+    if (abort.signal.aborted) {
+      if (ttsAbort === abort) ttsAbort = null;
+      signal?.removeEventListener('abort', onSignalAbort);
+      return { status: 'cancelled' };
+    }
+    const objectUrl = URL.createObjectURL(blob);
+    const audio = new Audio(objectUrl);
+    ttsAudio = audio;
+    return new Promise((resolve) => {
+      const done = (status) => {
+        URL.revokeObjectURL(objectUrl);
+        if (ttsAudio === audio) ttsAudio = null;
+        if (ttsAbort === abort) ttsAbort = null;
+        signal?.removeEventListener('abort', onSignalAbort);
+        resolve({ status });
+      };
+      audio.onended = () => done('ended');
+      audio.onerror = () => done('error');
+      abort.signal.addEventListener('abort', () => { audio.pause(); done('cancelled'); }, { once: true });
+      audio.play().then(() => { if (!abort.signal.aborted) call(onStart); }).catch(() => done('error'));
+    });
+  } catch (error) {
+    if (ttsAbort === abort) ttsAbort = null;
+    signal?.removeEventListener('abort', onSignalAbort);
+    if (error.name === 'AbortError' || abort.signal.aborted) return { status: 'cancelled' };
+    call(onFallback);
+    return beginSpeech(text, { signal, onStart }).promise;
+  }
+}
+
 export function speak(text) {
-  return beginSpeech(text).started;
+  beginTTS(text).catch(() => {});
+  return true;
 }
 
 export function speakAsync(text, options = {}) {
-  return beginSpeech(text, options).promise;
+  return beginTTS(text, options);
 }
 
 export function stopSpeaking() {
-  // Resolve first: browser cancel() may synchronously emit an error event or emit nothing.
+  ttsAbort?.abort();
+  ttsAbort = null;
+  if (ttsAudio) {
+    ttsAudio.pause();
+    ttsAudio = null;
+  }
   speakingSession?.finish('cancelled');
   try { globalThis.speechSynthesis?.cancel(); } catch { /* Speech service already closed. */ }
 }

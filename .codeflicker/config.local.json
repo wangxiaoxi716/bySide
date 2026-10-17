@@ -2,7 +2,12 @@
   "permissions": {
     "allow": [
       "Write(/requirements.txt)",
-      "Write(/.env.example)"
+      "Write(/.env.example)",
+      "Fetch(domain:docs.volcengine.com)",
+      "Write(/.gitignore)",
+      "Edit(/README.md)",
+      "Write(/yatuan-companion/**)",
+      "Edit(/yatuan-companion/dist/**)"
     ]
   }
 }

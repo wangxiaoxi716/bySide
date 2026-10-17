@@ -60,7 +60,7 @@ function defaultState() {
     energy: 86, intimacy: 12, growth: 18, growthStage: 0,
     flowerStyle: 'cream', flowerCount: 1, speech,
     chat: [{ id: makeId(), role: 'assistant', text: speech, at }],
-    memories: [], meals: [], personality: 'gentle', sound: false,
+    memories: [], meals: [], personality: 'gentle', sound: true,
     projection: { scale: 1, x: 32, y: 32, showStats: true }, createdAt: at,
   };
 }
@@ -212,7 +212,7 @@ export function addMemory(text) { return updateState({ memories: remember(state.
 export function deleteMemory(id) {
   return updateState({ memories: state.memories.filter(item => item.id !== id) });
 }
-function extractMemory(text) {
+export function extractMemory(text) {
   const explicit = text.match(/(?:请|帮我|请帮我)?记住[：:，,\s]*(.+)/);
   if (explicit && !/^(?:了?吗|什么|哪些|了吗|没有)[？?。！!]*$/.test(explicit[1])) {
     return clean(explicit[1].replace(/[。！!]+$/, ''), 500);

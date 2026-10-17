@@ -174,7 +174,7 @@ export async function requestAI({ messages, imageDataUrl, signal, jsonOutput = f
       throw new Error('AI 服务请求过于频繁或额度不足，请稍后再试，并检查代理服务额度。');
     }
     if (response.status >= 500) {
-      throw new Error('AI 服务暂时出现故障，请稍后重试。');
+      throw new Error('AI 服务暂时出现故障，请稍后重试。'+response.status);
     }
     if (!response.ok) {
       throw new Error(`AI 服务未接受请求（${response.status}），请检查完整接口地址、模型名称与图片支持能力。`);
