@@ -1,0 +1,13 @@
+/Users/wangxiaoxi07/kuaishou_projects/beichi/code/bySide/src/main/java/com/byside/exception/LlmException.java
+/Users/wangxiaoxi07/kuaishou_projects/beichi/code/bySide/src/main/java/com/byside/BySideApplication.java
+/Users/wangxiaoxi07/kuaishou_projects/beichi/code/bySide/src/main/java/com/byside/dto/upstream/UpstreamChatResponse.java
+/Users/wangxiaoxi07/kuaishou_projects/beichi/code/bySide/src/main/java/com/byside/dto/ChatResponse.java
+/Users/wangxiaoxi07/kuaishou_projects/beichi/code/bySide/src/main/java/com/byside/dto/Message.java
+/Users/wangxiaoxi07/kuaishou_projects/beichi/code/bySide/src/main/java/com/byside/service/ChatService.java
+/Users/wangxiaoxi07/kuaishou_projects/beichi/code/bySide/src/main/java/com/byside/config/LlmProperties.java
+/Users/wangxiaoxi07/kuaishou_projects/beichi/code/bySide/src/main/java/com/byside/dto/ChatRequest.java
+/Users/wangxiaoxi07/kuaishou_projects/beichi/code/bySide/src/main/java/com/byside/exception/GlobalExceptionHandler.java
+/Users/wangxiaoxi07/kuaishou_projects/beichi/code/bySide/src/main/java/com/byside/client/LlmClient.java
+/Users/wangxiaoxi07/kuaishou_projects/beichi/code/bySide/src/main/java/com/byside/config/RestClientConfig.java
+/Users/wangxiaoxi07/kuaishou_projects/beichi/code/bySide/src/main/java/com/byside/controller/ChatController.java
+/Users/wangxiaoxi07/kuaishou_projects/beichi/code/bySide/src/main/java/com/byside/controller/HealthController.java
