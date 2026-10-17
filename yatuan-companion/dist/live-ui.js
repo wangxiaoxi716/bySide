@@ -1,6 +1,5 @@
 import { createLiveController, getLiveConfig, saveLiveConfig, discoverLocalAI } from './live.js';
 import { getAIConfig, saveAIConfig, requestAI } from './ai.js';
-import { listCameras } from './media.js';
 import { esc, icon } from './stage.js';
 
 export function mountLiveUI({ beforeStart = () => {}, onActive = () => {} } = {}) {
@@ -31,8 +30,12 @@ export function mountLiveUI({ beforeStart = () => {}, onActive = () => {} } = {}
   async function refreshCameras() {
     try {
       const current = $('#live-camera-select').value || getLiveConfig().cameraId;
-      const cameras = await listCameras();
-      $('#live-camera-select').innerHTML = '<option value="">系统默认摄像头</option>' + cameras.map((c, i) => `<option value="${esc(c.deviceId)}">${esc(c.label || `摄像头 ${i + 1}（允许权限后显示名称）`)}</option>`).join('');
+      if (navigator.mediaDevices?.getUserMedia) {
+        try { const s = await navigator.mediaDevices.getUserMedia({ video: true, audio: false }); s.getTracks().forEach(t => t.stop()); } catch (e) {}
+      }
+      const entries = await navigator.mediaDevices?.enumerateDevices?.() || [];
+      const cameras = entries.filter(d => d.kind === 'videoinput');
+      $('#live-camera-select').innerHTML = '<option value="">系统默认摄像头</option>' + cameras.map((c, i) => `<option value="${esc(c.deviceId)}">${esc(c.label || `摄像头 ${i + 1}`)}</option>`).join('');
       if (cameras.some(c => c.deviceId === current)) $('#live-camera-select').value = current;
       else if (current) { $('#live-camera-select').insertAdjacentHTML('beforeend', `<option value="${esc(current)}">上次选择的摄像头（待连接）</option>`); $('#live-camera-select').value = current; }
     } catch (error) { showError(error.message); }

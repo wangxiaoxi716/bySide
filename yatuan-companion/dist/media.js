@@ -27,8 +27,16 @@ function cameraError(error) {
 export async function listCameras() {
   const devices = globalThis.navigator?.mediaDevices;
   if (!devices?.enumerateDevices) return [];
-  // Enumerating never requests permission; labels become available after a user allows the camera.
-  const cameras = (await devices.enumerateDevices()).filter((device) => device.kind === 'videoinput');
+  let allDevices = await devices.enumerateDevices();
+  let cameras = allDevices.filter((d) => d.kind === 'videoinput');
+  if (cameras.length > 0 && cameras.every((d) => !d.label)) {
+    try {
+      const stream = await devices.getUserMedia({ video: true, audio: false });
+      stream.getTracks().forEach((t) => t.stop());
+      allDevices = await devices.enumerateDevices();
+      cameras = allDevices.filter((d) => d.kind === 'videoinput');
+    } catch (e) {}
+  }
   return cameras.map((device, index) => ({
     deviceId: device.deviceId,
     groupId: device.groupId,
