@@ -95,6 +95,7 @@ export function mountLiveUI({ beforeStart = () => {}, onActive = () => {} } = {}
         if(health?.configured === false && (!getAIConfig().endpoint || getAIConfig().endpoint === '/api/chat/completions')) throw new Error('本机 AI 尚未配置：在 .env 中填入 DeepSeek Key 后重启服务。请查看下方接线与配置说明。');
         await controller.start(video);
         await refreshCameras();
+        await controller.wake();
       }
       if (action === 'wake') await controller.wake();
       if (action === 'pause') controller.pauseObservation();
