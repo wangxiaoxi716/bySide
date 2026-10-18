@@ -2,6 +2,7 @@ import {mountLiveUI} from './live-ui.js';
 import {discoverLocalAI} from './live.js';
 import { getState, subscribe } from './state.js';
 import { characterArt, miniStats } from './stage.js';
+import { startModeSync } from './mode-sync.js';
 
 const root = document.querySelector('#projection-root');
 const SCENE_WIDTH = 510;
@@ -53,3 +54,8 @@ document.querySelector('#projection-fullscreen').onclick = async () => {
 const liveUI=mountLiveUI();
 document.querySelector('#projection-live').onclick=()=>liveUI.open();
 discoverLocalAI();
+
+// Hardware mode sync: switch this projection window to the chess scene.
+startModeSync((mode) => {
+  if (mode === 'chess') location.replace('./chess-projection.html');
+});

@@ -88,7 +88,7 @@ function home(s) {
 }
 
 function meals(s) {
-    return `${header('每一顿，都值得好好吃。', '一起看看盘子里的日常。记录由你确认，建议也由你选择。', btn('meal-modal', '记录这一餐', 'primary', 'plus'))}<div class="meal-workspace"><section class="meal-invitation card"><div class="meal-visual"><div class="drawn-plate"><span>🥦</span><span>🍚</span><span>🥕</span></div></div><div><span class="eyebrow">坐下来，一起开饭</span><h2>今天，盘子里有什么？</h2><p>打开摄像头或上传餐食照片，也可以直接用语音告诉我。</p><div class="button-row">${btn('camera', '打开摄像头', 'primary', 'camera')}${btn('upload-meal', '上传照片', 'secondary', 'upload')}</div><button class="text-btn sample-link" data-action="sample-meal">${icon('play', 15)} 先试试示例餐食</button></div></section><section class="card meal-tip"><span>${icon('sprout', 31)}</span><h3>吃饭，也是相伴的时间。</h3><p>餐食照片会保存在当前浏览器。未连接视觉 AI 时，由你确认食物内容，我们一起留下这顿饭。</p><button class="text-btn" data-action="settings">查看连接状态 ${icon('arrow', 14)}</button></section></div><div class="section-title"><h2>我的餐食日记 <small>${s.meals.length} 餐</small></h2><span class="subtle">一点一点，留住日常</span></div>${s.meals.length ? `<div class="meal-records">${[...s.meals].reverse().map(m => `<article class="card meal-record"><div class="meal-record-image">${m.image ? `<img src="${esc(m.image)}" alt="你记录的餐食">` : '<span>🍚</span>'}<small>${esc(m.source)}</small></div><div><small>${date(m.at)}</small><h3>${esc(m.description || m.groups.join('、'))}</h3><div class="tags">${m.groups.map(g => `<span>${esc(g)}</span>`).join('')}</div><p>${esc(m.advice)}</p></div></article>`).join('')}</div>` : empty('bowl', '第一顿饭，从今天开始。', '不需要完美的摆盘，普通的一餐也值得记录。', btn('meal-modal', '记录这一餐', 'primary', 'plus'))}`;
+    return `${header('每一顿，都值得好好吃。', '一起看看盘子里的日常。记录由你确认，建议也由你选择。', btn('meal-modal', '记录这一餐', 'primary', 'plus'))}<div class="meal-workspace"><section class="meal-invitation card"><div class="meal-visual"><div class="drawn-plate"><span>🥦</span><span>🍚</span><span>🥕</span></div></div><div><span class="eyebrow">坐下来，一起开饭</span><h2>今天，盘子里有什么？</h2><p>打开摄像头或上传餐食照片，也可以直接用语音告诉我。</p><div class="button-row">${btn('meal-entry', '一起吃饭', 'primary', 'camera')}</div><button class="text-btn sample-link" data-action="sample-meal">${icon('play', 15)} 先试试示例餐食</button></div></section><section class="card meal-tip"><span>${icon('sprout', 31)}</span><h3>吃饭，也是相伴的时间。</h3><p>餐食照片会保存在当前浏览器。未连接视觉 AI 时，由你确认食物内容，我们一起留下这顿饭。</p><button class="text-btn" data-action="settings">查看连接状态 ${icon('arrow', 14)}</button></section></div><div class="section-title"><h2>我的餐食日记 <small>${s.meals.length} 餐</small></h2><span class="subtle">一点一点，留住日常</span></div>${s.meals.length ? `<div class="meal-records">${[...s.meals].reverse().map(m => `<article class="card meal-record"><div class="meal-record-image">${m.image ? `<img src="${esc(m.image)}" alt="你记录的餐食">` : '<span>🍚</span>'}<small>${esc(m.source)}</small></div><div><small>${date(m.at)}</small><h3>${esc(m.description || m.groups.join('、'))}</h3><div class="tags">${m.groups.map(g => `<span>${esc(g)}</span>`).join('')}</div><p>${esc(m.advice)}</p></div></article>`).join('')}</div>` : empty('bowl', '第一顿饭，从今天开始。', '不需要完美的摆盘，普通的一餐也值得记录。', btn('meal-modal', '记录这一餐', 'primary', 'plus'))}`;
 }
 
 function growth(s) {
@@ -164,6 +164,10 @@ function characterModal() {
 
 function mealModal() {
     showModal('一起看看，这一餐。', `<div class="meal-modal-grid"><div class="meal-photo">${picture ? `<img src="${esc(picture)}" alt="待确认的餐食照片">` : `<div>${icon('camera', 40)}<p>把这一餐，留在这里</p></div>`}<div class="photo-actions">${btn('camera', '拍照', 'small secondary', 'camera')}${btn('upload-meal', '上传', 'small secondary', 'upload')}</div></div><form id="meal-form"><label class="field-label" for="meal-description">盘子里有什么？</label><textarea id="meal-description" name="description" placeholder="比如：米饭、西兰花和豆腐" maxlength="600" required></textarea><button type="button" class="text-btn" data-action="meal-voice">${icon('mic', 16)} 说出餐食内容</button><label class="field-label">确认这一餐包含</label><div class="food-checks">${['主食', '蔬菜', '蛋白质', '水果', '奶类'].map(g => `<label><input type="checkbox" name="groups" value="${g}"><span>${g}</span></label>`).join('')}</div><p class="field-hint">${isAIConfigured() ? '你可以让视觉 AI 提供参考，再自己确认记录。' : '本地体验不会自动识别图片。请确认食物内容，伙伴会据此回应。'}</p><div class="button-row">${isAIConfigured() && picture ? btn('analyze-meal', '请 AI 看看', 'secondary', 'spark') : ''}<button type="submit" class="btn primary">${icon('check')}确认并记录</button></div><p class="analysis-result" id="meal-analysis"></p></form></div>`);
+}
+
+function mealEntryModal() {
+    showModal('一起吃饭', `<p class="modal-intro">拍一张，或者选一张照片，我们一起看看这一餐。</p><div class="button-row">${btn('camera', '打开摄像头', 'primary', 'camera')}${btn('upload-meal', '上传照片', 'secondary', 'upload')}</div><p class="field-hint">摄像头画面只在当前页面显示；上传的照片也只保存在当前浏览器。</p>`);
 }
 
 async function cameraModal() {
@@ -356,6 +360,9 @@ async function action(name, el) {
             picture = null;
             pictureSource = '手动确认';
             mealModal();
+            break;
+        case 'meal-entry':
+            mealEntryModal();
             break;
         case 'upload-meal':
             document.querySelector('#meal-upload').click();

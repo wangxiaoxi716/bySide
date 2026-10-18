@@ -1,11 +1,19 @@
 import { createChessSession } from './chess-session.js';
 import { projectionGeometry } from './chess-projection-geometry.js';
 import { characterArt } from './stage.js';
+import { startModeSync } from './mode-sync.js';
 
 const view = document.body.dataset.chessView;
 const isFamily = view === 'family';
 const room = new URLSearchParams(location.search).get('room') || '';
 const roomId = /^[a-zA-Z0-9_-]{1,80}$/.test(room) ? room : '';
+
+// On the projection window, follow the hardware back to companion mode.
+if (view === 'projection') {
+  startModeSync((mode) => {
+    if (mode === 'companion') location.replace('./projection.html');
+  });
+}
 const $ = (id) => document.getElementById(id);
 const letters = 'ABCDEFGHIJKLMNO';
 let state = null;
