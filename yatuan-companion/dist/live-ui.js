@@ -13,14 +13,14 @@ export function mountLiveUI({ beforeStart = () => {}, onActive = () => {} } = {}
   <p class="live-error" role="alert" id="live-error"></p>
   <p class="live-error" role="status" id="live-voice-warning"></p>
   <div class="live-grid"><div><div class="live-camera"><video id="live-camera" autoplay muted playsinline></video><div id="live-camera-placeholder">${icon('camera',32)}<p>唤醒后，再看看你的这一餐。</p></div><span>USB 摄像头 · 对准实际餐盘</span></div><p class="field-hint" id="live-observation">唤醒后，拍摄的餐盘图片会发送至你配置的 AI 服务。</p></div>
-  <div class="live-fields"><label class="field-label" for="live-camera-select">选择摄像头</label><select id="live-camera-select"><option value="">系统默认摄像头</option></select><button type="button" class="text-btn" data-live="devices">刷新设备列表</button>
+  <div class="live-fields"><label class="field-label" for="live-camera-select">选择摄像头</label><select id="live-camera-select"></select><button type="button" class="text-btn" data-live="devices">刷新设备列表</button>
   <label class="field-label" for="live-interval">观察间隔</label><select id="live-interval"><option value="5">5 秒 · 互动频繁</option><option value="10">10 秒 · 日常陪伴</option><option value="15">15 秒 · 更安静</option></select>
   <label class="field-label" for="live-wake">唤醒词</label><input id="live-wake" maxlength="20" minlength="2" value="芽团芽团"><p class="field-hint">麦克风使用浏览器默认输入设备。语音识别可能经浏览器服务处理；不是离线唤醒。</p></div></div>
   <div class="live-metrics"><span id="live-frames">已拍摄 0 帧</span><span id="live-requests">已请求 0 次</span><span id="live-last">尚未观察</span></div>
   <form class="live-chat"><input id="live-text" aria-label="实时陪伴文字输入" placeholder="也可以输入：帮我看看盘子里有什么" maxlength="1000"><button class="btn primary" type="submit">发送</button></form>
 
   <details class="live-connection"><summary>AI 服务连接</summary><p class="field-hint">本站服务地址为 /api/chat/completions，会自动连接。API Key 由服务端保存，网页无需填写。</p><label class="field-label" for="live-endpoint">代理接口地址</label><input id="live-endpoint" autocomplete="off" placeholder="/api/chat/completions"><label class="field-label" for="live-model">模型（以服务端配置为准）</label><input id="live-model" autocomplete="off" placeholder="deepseek-flash"><div class="button-row"><button type="button" class="btn secondary small" data-live="save-ai">保存连接</button><button type="button" class="btn secondary small" data-live="test-ai">测试文字连接</button></div><p class="field-hint" id="live-ai-result"></p></details>
-  <a class="live-guide-link" href="help.html" target="_blank" rel="noopener">${icon('book',17)} 查看接线、DeepSeek 配置和使用说明 ${icon('arrow',16)}</a></div>`;
+  <a class="live-guide-link" href="help.html" target="_blank" rel="noopener">${icon('book', 17)} 查看接线、DeepSeek 配置和使用说明 ${icon('arrow', 16)}</a></div>`;
   document.body.append(panel);
   const $ = selector => panel.querySelector(selector);
   const video = $('#live-camera');
@@ -40,13 +40,13 @@ export function mountLiveUI({ beforeStart = () => {}, onActive = () => {} } = {}
       else if (current) { $('#live-camera-select').insertAdjacentHTML('beforeend', `<option value="${esc(current)}">上次选择的摄像头（待连接）</option>`); $('#live-camera-select').value = current; }
     } catch (error) { showError(error.message); }
   }
-  function loadFields() {
+  async function loadFields() {
     const config = getLiveConfig(), ai = getAIConfig();
     $('#live-interval').value = String(config.intervalSeconds);
     $('#live-wake').value = config.wakePhrase;
     $('#live-endpoint').value = ai.endpoint || '/api/chat/completions';
     $('#live-model').value = ai.model;
-    refreshCameras();
+    await refreshCameras();
   }
   controller.subscribe(status => {
     if(status.active && !wasActive) onActive();
@@ -64,7 +64,7 @@ export function mountLiveUI({ beforeStart = () => {}, onActive = () => {} } = {}
     if (status.error) showError(status.error);
     else showError('');
     panel.querySelectorAll('[data-live="pause"],[data-live="stop"]').forEach(el => { el.disabled = !status.active || (status.mode === 'starting' && el.dataset.live !== 'stop'); });
-    for (const el of panel.querySelectorAll('.live-fields input,.live-fields select,[data-live="save-ai"],[data-live="test-ai"],#live-endpoint,#live-model')) el.disabled = status.active;
+    for (const el of panel.querySelectorAll('.live-fields input,.live-fields select:not(#live-camera-select),[data-live="save-ai"],[data-live="test-ai"],#live-endpoint,#live-model')) el.disabled = status.active;
     document.body.classList.toggle('live-running', status.active);
     const badge = document.querySelector('#projection-live-status');
     if (badge) { badge.textContent = status.active || status.error ? `${modeName}${status.error || status.voiceWarning ? ' · 请打开陪伴面板检查' : ''}` : ''; }
@@ -120,7 +120,14 @@ export function mountLiveUI({ beforeStart = () => {}, onActive = () => {} } = {}
   });
   panel.addEventListener('click', event => { if (event.target === panel) panel.close(); });
   panel.addEventListener('close', () => { testAbort?.abort(); if (controller.getStatus().active) controller.stop(); });
-  addEventListener('pagehide', () => { testAbort?.abort(); controller.destroy(); });
+  $('#live-camera-select').addEventListener('change', async () => {
+    saveLiveConfig({ cameraId: $('#live-camera-select').value });
+    if (controller.getStatus().localOwner && controller.getStatus().mode === 'observing') {
+      try { controller.pauseObservation(); await controller.wake(); } catch (e) { showError(e.message); }
+    }
+  });
+  addEventListener('pagehide', () => { testAbort?.abort(); controller.destroy(); navigator.mediaDevices?.removeEventListener('devicechange', refreshCameras); });
+  navigator.mediaDevices?.addEventListener('devicechange', refreshCameras);
   loadFields();
-  return { controller, open() { loadFields(); if (!panel.open) panel.showModal(); startSession().catch(err => showError(err.message)); } };
+  return { controller, async open() { await loadFields(); if (!panel.open) panel.showModal(); startSession().catch(err => showError(err.message)); } };
 }

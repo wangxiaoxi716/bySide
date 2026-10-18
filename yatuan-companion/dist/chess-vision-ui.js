@@ -10,7 +10,13 @@ export function mountChessVision({ host, getState, onMove, onStatus }) {
   host.innerHTML = `
     <div class="cvn-steps"><span><b>01</b> 接摄像头</span><span><b>02</b> 标定四个角</span><span><b>03</b> 放下真实黑子</span></div>
     <div class="cvn-layout"><div class="cvn-camera-column">
-      <div class="cvn-device-row"><label class="sr-only" for="cvn-device">棋盘摄像头</label><select id="cvn-device"><option value="">系统默认摄像头</option></select><button type="button" data-action="devices">刷新</button><button type="button" data-action="camera">连接摄像头</button></div>
+      <div class="cvn-device-row"><label class="sr-only" for="cvn-device">棋盘摄像头</label>
+        <select id="cvn-device">
+                <option value="">系统默认摄像头</option>
+        </select>
+        <button type="button" data-action="devices">刷新</button>
+        <button type="button" data-action="camera">连接摄像头</button>
+       </div>
       <div class="cvn-orientation"><label for="cvn-rotation">画面方向</label><select id="cvn-rotation"><option value="0">保持原方向</option><option value="180">旋转 180°</option></select><small>倒置摄像头可以转正后再标定。</small></div>
       <video class="cvn-video" muted playsinline></video><div class="cvn-preview"><canvas id="cvn-canvas" width="960" height="540" aria-label="摄像头棋盘画面，标定时按顺序点击四角" tabindex="0"></canvas><div class="cvn-placeholder"><span>⌗</span><strong>把摄像头对准整张投影棋盘</strong><p>只拍棋盘，不使用麦克风。画面留在本机。</p></div><span class="cvn-frame-label">尚未连接</span></div>
       <div class="cvn-calibration-actions"><button type="button" data-action="calibrate">拍照标定四角</button><button type="button" data-action="accept" hidden>确认这 225 个交叉点</button><label class="cvn-upload">导入棋盘照片<input id="cvn-photo" type="file" accept="image/png,image/jpeg,image/webp"></label><label class="cvn-upload">导入四角坐标<input id="cvn-coordinate-file" type="file" accept="application/json,.json"></label></div>

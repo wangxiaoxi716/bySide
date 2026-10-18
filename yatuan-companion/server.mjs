@@ -318,11 +318,14 @@ export async function startServer() {
   for (const name of ENV_KEYS) if (process.env[name] !== undefined) values[name] = process.env[name];
   const config = makeConfig(values);
   const server = createYatuanServer({ config });
-  await new Promise((resolve, reject) => { server.once('error', reject); server.listen(4173, '0.0.0.0', resolve); });
-  console.log('芽团本地服务：http://127.0.0.1:4173');
+  const host = process.env.HOST || '0.0.0.0';
+  await new Promise((resolve, reject) => { server.once('error', reject); server.listen(4173, host, resolve); });
+  const bound = server.address().address;
+  const wildcard = bound === '0.0.0.0' || bound === '::';
+  if (wildcard) console.log('芽团本地服务：http://127.0.0.1:4173');
   for (const addresses of Object.values(os.networkInterfaces())) {
     for (const address of addresses ?? []) {
-      if (address.family === 'IPv4' && !address.internal) console.log(`局域网访问：http://${address.address}:4173`);
+      if (address.family === 'IPv4' && !address.internal && (wildcard || address.address === bound)) console.log(`局域网访问：http://${address.address}:4173`);
     }
   }
   console.log(config.configured ? 'AI 已配置；密钥仅在本机服务中使用。' : 'AI 尚未配置；请复制 .env.example 为 .env 并填写后重启。');
