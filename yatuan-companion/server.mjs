@@ -1,4 +1,5 @@
 import http from 'node:http';
+import os from 'node:os';
 import path from 'node:path';
 import { readFile, realpath, stat } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -120,6 +121,18 @@ async function boundedResponse(response) {
 export function createYatuanServer({ config = makeConfig(), distDir = path.join(ROOT, 'dist'), timeoutMs = 28_000, maxRequestsPerMinute = 30, maxConcurrent = 2, fetchImpl = fetch } = {}) {
   let active = 0;
   let requestTimes = [];
+  // Latest mode reported by the hardware. Kept in memory for the demo; the
+  // projection page fetches it on open and receives updates over SSE.
+  let latestMode = 'companion';
+  let latestDeviceId = '';
+  const sseClients = new Set();
+  const broadcastMode = () => {
+    const payload = `event: mode\ndata: ${JSON.stringify({ mode: latestMode, deviceId: latestDeviceId })}\n\n`;
+    for (const client of sseClients) {
+      try { client.write(payload); }
+      catch { sseClients.delete(client); }
+    }
+  };
   const distRoot = path.resolve(distDir);
   const server = http.createServer(async (req, res) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -129,10 +142,57 @@ export function createYatuanServer({ config = makeConfig(), distDir = path.join(
     try {
       const port = server.address()?.port;
       const allowedHosts = new Set([`127.0.0.1:${port}`, `localhost:${port}`]);
-      if (!allowedHosts.has(req.headers.host)) throw new RequestError(403, '此服务仅接受本机访问。', 'forbidden_origin');
+      // Allow the LAN address too, so the ESP32 and other devices on the same
+      // network can reach the mode-sync endpoints.
+      for (const addresses of Object.values(os.networkInterfaces())) {
+        for (const address of addresses ?? []) {
+          if (address.family === 'IPv4' && !address.internal) allowedHosts.add(`${address.address}:${port}`);
+        }
+      }
+      if (!allowedHosts.has(req.headers.host)) throw new RequestError(403, '此服务仅接受本机或局域网访问。', 'forbidden_origin');
       if (req.url?.startsWith('//') || !req.url?.startsWith('/')) throw new RequestError(400, '请求地址不正确。');
       const base = `http://${req.headers.host}`;
       const url = new URL(req.url, base);
+      // ---- Hardware mode sync: ESP32 -> server -> projection page ----
+      if (url.pathname === '/api/state' || url.pathname === '/api/events' || url.pathname === '/api/device/mode') {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+        if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
+      }
+      if (url.pathname === '/api/state') {
+        if (req.method !== 'GET') throw new RequestError(405, '此接口仅支持 GET。');
+        return json(res, 200, { mode: latestMode, deviceId: latestDeviceId });
+      }
+      if (url.pathname === '/api/events') {
+        if (req.method !== 'GET') throw new RequestError(405, '此接口仅支持 GET。');
+        res.writeHead(200, {
+          'Content-Type': 'text/event-stream; charset=utf-8',
+          'Cache-Control': 'no-cache, no-store',
+          'Connection': 'keep-alive',
+          'Access-Control-Allow-Origin': '*',
+        });
+        res.write(`event: mode\ndata: ${JSON.stringify({ mode: latestMode, deviceId: latestDeviceId })}\n\n`);
+        res.socket?.setNoDelay?.(true);
+        sseClients.add(res);
+        const heartbeat = setInterval(() => {
+          try { res.write(': ping\n\n'); } catch { /* client is gone */ }
+        }, 25_000);
+        const cleanup = () => { clearInterval(heartbeat); sseClients.delete(res); };
+        req.on('close', cleanup);
+        res.on('close', cleanup);
+        return;
+      }
+      if (url.pathname === '/api/device/mode') {
+        if (req.method !== 'POST') throw new RequestError(405, '此接口仅支持 POST。');
+        const body = await readJson(req);
+        const mode = String(body.mode || '').toLowerCase();
+        if (mode !== 'companion' && mode !== 'chess') throw new RequestError(400, 'mode 必须是 companion 或 chess。');
+        latestMode = mode;
+        latestDeviceId = String(body.deviceId || '');
+        broadcastMode();
+        return json(res, 200, { ok: true, mode, deviceId: latestDeviceId });
+      }
       if (url.pathname === '/api/health') {
         if (req.method !== 'GET') throw new RequestError(405, '此接口仅支持 GET。');
         return json(res, 200, { configured: Boolean(config.configured), model: config.configured ? config.model : '', endpoint: '/api/chat/completions' });
@@ -258,8 +318,13 @@ export async function startServer() {
   for (const name of ENV_KEYS) if (process.env[name] !== undefined) values[name] = process.env[name];
   const config = makeConfig(values);
   const server = createYatuanServer({ config });
-  await new Promise((resolve, reject) => { server.once('error', reject); server.listen(4173, '127.0.0.1', resolve); });
+  await new Promise((resolve, reject) => { server.once('error', reject); server.listen(4173, '0.0.0.0', resolve); });
   console.log('芽团本地服务：http://127.0.0.1:4173');
+  for (const addresses of Object.values(os.networkInterfaces())) {
+    for (const address of addresses ?? []) {
+      if (address.family === 'IPv4' && !address.internal) console.log(`局域网访问：http://${address.address}:4173`);
+    }
+  }
   console.log(config.configured ? 'AI 已配置；密钥仅在本机服务中使用。' : 'AI 尚未配置；请复制 .env.example 为 .env 并填写后重启。');
   return server;
 }
