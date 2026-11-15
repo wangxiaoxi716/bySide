@@ -102,7 +102,11 @@ export class ModelService {
     if (!endpoint || !model || !key) return '【演示回复】我在这里陪着你。可以继续告诉我你的想法。';
     const url = new URL(endpoint);
     if (url.protocol !== 'https:' && !['localhost', '127.0.0.1'].includes(url.hostname)) throw new BadRequestException('模型服务地址必须使用 HTTPS');
-    const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` }, body: JSON.stringify({ model, messages, stream: false, max_tokens: maxTokens, ...(url.hostname === 'api.deepseek.com' ? { thinking: { type: 'disabled' } } : {}) }), signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(30000)]) : AbortSignal.timeout(30000), redirect: 'error' });
+    const preference = (process.env.YATUAN_AI_THINKING || 'auto').toLowerCase();
+    if (!['auto', 'enabled', 'disabled'].includes(preference)) throw new BadRequestException('YATUAN_AI_THINKING 只能设置为 auto、enabled 或 disabled');
+    const deepseek = url.hostname === 'api.deepseek.com' || /^(?:[^/]+\/)*deepseek(?:[-_/]|$)/i.test(model);
+    const thinking = preference === 'auto' ? (deepseek ? 'disabled' : undefined) : preference;
+    const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` }, body: JSON.stringify({ model, messages, stream: false, max_tokens: maxTokens, ...(thinking ? { thinking: { type: thinking } } : {}) }), signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(30000)]) : AbortSignal.timeout(30000), redirect: 'error' });
     if (!response.ok) throw new Error(`模型服务请求失败（${response.status}）`);
     const result: any = await response.json();
     const reply = result?.choices?.[0]?.message?.content;

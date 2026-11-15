@@ -25,6 +25,25 @@ test('desktop observations preserve real food results and validate image and mod
   await assert.rejects(analyzeDesktop(async () => '', 'data:image/jpeg;base64,aGVsbG8=', '', new AbortController().signal), /格式/);
 });
 
+test('package references require a clear specific match and retain their per-100g basis', async () => {
+  async function inspect(description: string, name: string, certain = true, foodPresent = true) {
+    return analyzeDesktop(async () => JSON.stringify({ description, foodPresent, foods: [{ name, group: '', certain }] }), image, '盘子里有什么？', new AbortController().signal);
+  }
+  const cake = await inspect('包装清楚写着优乐麦干烙蛋糕，恋奶味。', '干烙蛋糕');
+  assert.equal(cake.foodReferences?.[0].basis, 'per-100g');
+  assert.equal(cake.foodReferences?.[0].nutrients.sugarG, 33.9);
+  assert.equal(cake.foodReferences?.[0].nutrients.energyKj, 2196);
+  assert.deepEqual(cake.foodReferences?.[0].allergens, ['含麸质的谷物', '蛋', '乳']);
+
+  const sausage = await inspect('包装上写着泡面拍档香肠。', '香肠');
+  assert.equal(sausage.foodReferences?.[0].nutrients.sodiumMg, 950);
+  assert.equal(sausage.foodReferences?.[0].allergens, undefined, 'a separate photo is not assumed to be the same product');
+  assert.equal((await inspect('一块蛋糕，品牌与口味看不清。', '蛋糕')).foodReferences, undefined);
+  assert.equal((await inspect('优乐麦干烙蛋糕，原味。', '干烙蛋糕')).foodReferences, undefined);
+  assert.equal((await inspect('可能是优乐麦干烙蛋糕恋奶味。', '蛋糕', false)).foodReferences, undefined);
+  assert.equal((await inspect('优乐麦干烙蛋糕恋奶味。', '蛋糕', true, false)).foodReferences, undefined);
+});
+
 test('desktop capture refresh, periodic throttling, and pause cancellation', async () => {
   const events: any[] = [], results: any[] = [];
   let calls = 0;
@@ -86,10 +105,12 @@ test('real voice bridge handles desktop tools and typed replies while audio cont
     if (Array.isArray(messages[1]?.content)) {
       analyses++; signal.addEventListener('abort', () => { aborted = true; releaseVision?.(); });
       if (analyses === 1 || analyses === 3) await new Promise<void>(done => { releaseVision = done; });
+      if (analyses === 2) return JSON.stringify({ description: '包装写着优乐麦干烙蛋糕恋奶味。', foodPresent: true, foods: [{ name: '干烙蛋糕', group: '', certain: true }] });
       return JSON.stringify(observation);
     }
-    assert.match(String(messages[0].content), /苹果/);
-    return '桌上有苹果和茶。';
+    assert.match(String(messages[0].content), /优乐麦/);
+    assert.match(String(messages[0].content), /per-100g/);
+    return '看起来是蛋糕，具体营养信息请参考包装。';
   } });
   http.on('upgrade', (request, socket, head) => { const target = request.url === '/provider' ? provider : bridge; target.handleUpgrade(request, socket, head, ws => target.emit('connection', ws, request)); });
   const previousKey = process.env.VOLC_REALTIME_API_KEY, previousEndpoint = process.env.VOLC_REALTIME_ENDPOINT;
@@ -139,7 +160,9 @@ test('real voice bridge handles desktop tools and typed replies while audio cont
   send({ type: 'vision.frame', frameId: 'tool-fresh', captureId, image });
   await until(() => upstreamEvents.some(event => event.items?.[0]?.call_id === 'desktop-call'), 'tool result');
   const result = upstreamEvents.find(event => event.items?.[0]?.call_id === 'desktop-call');
-  assert.equal(result.items[0].role, 'tool'); assert.equal(JSON.parse(result.items[0].content[0].text).foods[0].name, '苹果');
+  const toolResult = JSON.parse(result.items[0].content[0].text);
+  assert.equal(result.items[0].role, 'tool'); assert.equal(toolResult.foods[0].name, '干烙蛋糕');
+  assert.equal(toolResult.foodReferences[0].basis, 'per-100g'); assert.equal(toolResult.foodReferences[0].nutrients.sugarG, 33.9);
   providerSend({ type: 'response.function_call_arguments.done', items: [{ call_id: 'desktop-call', name: 'observe_desktop', arguments: '{}' }] });
   await delay(20); assert.equal(upstreamEvents.filter(event => event.items?.[0]?.call_id === 'desktop-call').length, 1);
   send({ type: 'input.text', text: '桌上有什么？' });
