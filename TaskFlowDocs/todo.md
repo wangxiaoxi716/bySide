@@ -13,3 +13,17 @@
 - Goal: 基于五子棋实现井字棋并在 zt 分支交付
 - Task: `TaskFlowDocs/2026-11-15-tic-tac-toe/`
 - Next action: 团队审查 zt 分支；既有演示和语音测试问题另行处理。
+
+## 为芽团棋室开发大富翁游戏并生成卡片图片
+
+- ID: TF-20261115-83e19b
+- Status: promoted
+- Priority: normal
+- Owner: Unknown
+- Source: 用户请求
+- Kind: capability
+- Added: 2026-11-15
+- Updated: 2026-11-15
+- Goal: 为芽团棋室开发大富翁游戏并生成卡片图片
+- Task: `TaskFlowDocs/2026-11-15-yatuan-monopoly/`
+- Next action: Complete PRD / Spec / Plan and request approval.
