@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#6e8149"><title>芽团 · 棋盘上的小搭子</title>
-  <link rel="icon" href="icon.svg"><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="chess.css"><link rel="stylesheet" href="chess-vision.css">
+  <link rel="icon" href="icon.svg"><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="chess.css"><link rel="stylesheet" href="chess-vision.css"><link rel="stylesheet" href="tic-tac-toe.css"><link rel="stylesheet" href="game-ar.css">
   <script>try{if(window.self!==window.top)document.documentElement.classList.add('embedded');}catch(e){document.documentElement.classList.add('embedded');}</script>
   <style>.embedded .chess-rail{display:none}.embedded .chess-workspace{margin-left:0}</style>
 </head>
@@ -22,6 +22,7 @@
   <div class="chess-workspace">
     <a id="projection-open" style="display:none" target="_blank" rel="noopener"></a>
     <main class="chess-main">
+      <nav class="game-switch" aria-label="选择棋类"><a href="chess.html" aria-current="page">五子棋</a><a href="tic-tac-toe.html">井字棋</a><a href="monopoly.html">大富翁</a></nav>
       <section class="chess-heading"><div><p class="chess-eyebrow">THE LITTLE CHESS CLUB <span>✦</span></p><h1>给彼此，留一盘棋的时间。</h1><p>认真做你的对手，也做那个陪你慢慢想的人。</p></div><div class="heading-flower" aria-hidden="true"><span>✳</span><small>不着急，慢慢来</small></div></section>
       <section class="chess-modebar" aria-label="陪伴方式">
         <div class="chess-tabs" role="group" aria-label="选择对弈伙伴"><button data-mode="pet" class="selected" aria-pressed="true"><span data-icon="sprout"></span><span>和芽团下棋<small>一个随时在的小搭子</small></span></button><button data-mode="family" aria-pressed="false"><span data-icon="heart"></span><span>和家人一起<small>异地陪伴 · 本机模拟</small></span></button></div>

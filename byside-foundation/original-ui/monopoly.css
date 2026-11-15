@@ -1,0 +1,59 @@
+.monopoly-page .chess-main{max-width:1450px}
+.monopoly-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin:14px 0 25px}
+.monopoly-heading h1{font-size:clamp(30px,3vw,46px);line-height:1.28;letter-spacing:.03em;font-weight:600;color:#3d5136}
+.monopoly-heading h1 br{display:none}.monopoly-heading p:not(.chess-eyebrow){font-size:13px;color:#929c88;margin-top:12px;line-height:1.8}
+.monopoly-heading-mark{display:flex;gap:12px;align-items:center;color:#a1b386}.monopoly-heading-mark>span{font-size:44px;font-weight:200}.monopoly-heading-mark small{font-size:8px;line-height:1.6;letter-spacing:.12em}
+.monopoly-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.monopoly-modes{display:flex;gap:3px;padding:4px;background:#eaf0df;border:1px solid #e0e7d3;border-radius:13px}
+.monopoly-modes button{padding:10px 17px;border-radius:9px;font-size:11px;color:#879779}.monopoly-modes button[aria-pressed=true]{background:#fffef8;color:#536e40;box-shadow:0 2px 8px #52664212}
+.monopoly-toolbar-actions{display:flex;gap:17px}.mono-link{font-size:11px;color:#829675;text-decoration:underline;text-underline-offset:4px}
+.monopoly-layout{display:grid;grid-template-columns:minmax(0,1fr) 295px;gap:20px;align-items:start}
+.monopoly-game,.mono-players-card,.mono-card-preview,.mono-log-card{border:1px solid #e1e6d7;border-radius:20px;background:#fffef9}
+.monopoly-game{padding:22px;box-shadow:0 5px 20px #53613e07}
+.monopoly-game-heading,.mono-section-title{display:flex;justify-content:space-between;align-items:center;gap:10px}.mono-kicker{font-size:9px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#a1ad90}
+.monopoly-game-heading h2,.mono-section-title h2{font-size:16px;font-weight:600;color:#566c47;margin-top:5px}.mono-round{font-size:10px;color:#718760;background:#eff3e7;padding:8px 11px;border-radius:20px;white-space:nowrap}
+.monopoly-board{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:repeat(5,minmax(0,1fr));gap:4px;aspect-ratio:1;margin:20px auto 0;padding:9px;border:1px solid #dce5d1;border-radius:15px;background:#e6eddc}
+.mono-tile{min-width:0;min-height:0;display:flex;flex-direction:column;position:relative;padding:7px 7px 6px;border:1px solid #e6eadf;border-radius:7px;background:#fffef7;overflow:hidden}
+.mono-tile::before{content:'';height:4px;border-radius:4px;background:#b5c89d;flex:none;margin-bottom:5px}
+.mono-tile[data-group=garden]::before{background:#e9bc9e}.mono-tile[data-group=sky]::before{background:#b3c9cc}.mono-tile[data-group=sun]::before{background:#e5cb83}
+.mono-tile[data-kind=event]::before{background:#ddc7a0}.mono-tile[data-kind=start]::before{background:#819d6c}.mono-tile[data-kind=tax]::before{background:#dba882}.mono-tile[data-kind=rest]::before{background:#c8d5bb}
+.mono-tile strong{font-size:clamp(9px,1vw,12px);line-height:1.25;font-weight:600;color:#617450;overflow-wrap:anywhere}.mono-tile small{font-size:clamp(8px,.78vw,10px);line-height:1.2;color:#a0a995;margin-top:3px}
+.mono-tile .mono-owner{margin-top:auto;font-size:9px;color:#81966c;white-space:nowrap}.mono-tile .mono-owner.owner-1{color:#be856e}
+.mono-tokens{display:flex;gap:3px;position:absolute;right:5px;bottom:5px}.mono-token{width:21px;height:21px;border-radius:50%;display:grid;place-items:center;background:#688557;color:#fff;font-size:9px;font-weight:700;border:2px solid #fffef8;box-shadow:0 1px 3px #495b3f33}.mono-token.token-1{background:#ce9073}
+.monopoly-center{grid-area:2/2/5/5;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:12px;border:1px solid #dbe6d0;border-radius:11px;background:#f6f8ef;color:#667b55;min-width:0}
+.mono-center-mark{font-size:33px;color:#a7ba8f;line-height:1}.mono-center-kicker{font-size:8px;letter-spacing:.2em;color:#a5b69a;margin-top:7px}.monopoly-center h3{font-size:clamp(14px,1.5vw,20px);font-weight:600;margin-top:9px;color:#4c6640}
+.monopoly-center #turn-detail{max-width:250px;font-size:11px;line-height:1.7;color:#94a38a;margin:8px 0 10px}.mono-die{height:44px;width:44px;display:grid;place-items:center;border-radius:11px;background:#fffef8;border:1px solid #dfe7d5;color:#76935f;font-size:25px;box-shadow:0 3px 8px #617d5110;margin-bottom:12px}
+.mono-primary,.mono-secondary{display:inline-flex;align-items:center;justify-content:center;gap:15px;border-radius:10px;padding:11px 16px;font-size:11px;font-weight:600;line-height:1.3}
+.mono-primary{background:#718d5b;color:#fffefa}.mono-primary:hover:not(:disabled){background:#617d4d}.mono-secondary{background:#f1f4e9;color:#728766;border:1px solid #dfe8d7}.mono-primary:disabled,.mono-secondary:disabled{opacity:.5;cursor:not-allowed}
+.mono-board-status{min-height:16px;max-width:280px;margin-top:9px;font-size:10px;line-height:1.5;color:#879a7b}
+.monopoly-board-foot{display:flex;justify-content:space-between;gap:10px;margin-top:14px;color:#a1ad98;font-size:9px}.monopoly-board-foot i{display:inline-block;width:7px;height:7px;background:#789866;border-radius:50%;margin-right:4px}
+.monopoly-side{display:grid;gap:14px}.mono-players-card,.mono-card-preview,.mono-log-card{padding:18px}.mono-section-title>span{color:#aab99c}.mono-section-title h2{font-size:13px}.mono-player-list{display:grid;gap:9px;margin-top:14px}
+.mono-player{display:grid;grid-template-columns:34px 1fr auto;gap:9px;align-items:center;padding:10px;border:1px solid #eff1e8;border-radius:11px;background:#fafbf6}.mono-player.is-active{border-color:#b9cba8;background:#f4f8ee}
+.mono-player-avatar{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:#e3ebda;color:#668451;font-size:12px;font-weight:600}.mono-player:nth-child(2) .mono-player-avatar{background:#f4e4d9;color:#b98269}
+.mono-player strong{display:block;font-size:11px;color:#637655}.mono-player small{display:block;font-size:9px;color:#a2ad99;margin-top:3px}.mono-player-money{text-align:right;font-size:12px;color:#617c50;font-weight:600}.mono-player-money small{font-size:8px;font-weight:400}
+.mono-small-note{margin-top:10px;color:#aab4a1;font-size:9px}
+.mono-preview-art{height:165px;margin-top:13px;border-radius:12px;background:#e8ecd9 url('assets/monopoly/event-card-web.jpg') center 25% / cover no-repeat;display:flex;align-items:flex-end;overflow:hidden}
+.mono-preview-art>div{width:100%;padding:34px 12px 10px;background:linear-gradient(transparent,#fff9e8eb);color:#6e805c}.mono-preview-art span{display:block;font-size:8px;letter-spacing:.12em}.mono-preview-art strong{font-size:11px}.mono-card-preview>p{margin-top:9px;font-size:10px;color:#98a48f;line-height:1.7}
+.mono-log-card ol{list-style:none;padding:0;margin:12px 0 0;max-height:190px;overflow:auto}.mono-log-card li{position:relative;padding:8px 0 8px 15px;border-top:1px solid #f0f2eb;font-size:10px;line-height:1.6;color:#8a9980}.mono-log-card li::before{content:'';position:absolute;left:1px;top:14px;width:5px;height:5px;background:#b2c69f;border-radius:50%}
+.mono-dialog{max-width:min(720px,calc(100% - 30px));max-height:calc(100% - 30px);overflow:auto;border:1px solid #dce4d3;border-radius:20px;background:#fffef9;color:#576c49;padding:20px;box-shadow:0 20px 80px #26372324}
+.mono-dialog::backdrop{background:#24342180;backdrop-filter:blur(4px)}.mono-dialog-layout{display:grid;grid-template-columns:220px minmax(0,1fr);gap:24px;align-items:center}
+.mono-dialog-art{width:100%;aspect-ratio:2/3;border-radius:14px;background:#f0eddf center / cover no-repeat;box-shadow:0 5px 18px #556a3b17}
+.mono-dialog-content h2,.mono-info-dialog h2{font-size:25px;line-height:1.35;margin:8px 0 10px;color:#4d6541}.mono-dialog-content>p:not(.mono-kicker),.mono-info-dialog p,.mono-info-dialog li{font-size:12px;line-height:1.85;color:#899a80}
+.mono-card-numbers{display:flex;gap:12px;flex-wrap:wrap;margin:16px 0}.mono-card-numbers span{padding:10px 12px;background:#f2f5e9;border-radius:10px;font-size:11px;color:#718762}.mono-card-note{min-height:20px}.mono-dialog-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}.mono-info-dialog{width:min(480px,calc(100% - 30px));padding:26px}.mono-info-dialog ul{padding-left:18px;margin-top:10px}.mono-info-dialog .mono-dialog-actions{justify-content:flex-end}
+.monopoly-page [hidden],.ttt-view [hidden]{display:none!important}
+@media(max-width:1000px){.monopoly-layout{grid-template-columns:minmax(0,1fr) 250px;gap:14px}.monopoly-game{padding:16px}.mono-tile{padding:5px}.mono-token{width:17px;height:17px;font-size:8px}.mono-player{grid-template-columns:29px 1fr auto}.mono-player-avatar{width:28px;height:28px}}
+@media(max-width:700px){.monopoly-heading{margin:12px 0 20px}.monopoly-heading h1{font-size:27px}.monopoly-heading h1 br{display:block}.monopoly-heading p:not(.chess-eyebrow){font-size:11px}.monopoly-heading-mark{display:none}.monopoly-layout{grid-template-columns:1fr}.monopoly-game{padding:13px}.monopoly-board{padding:6px;gap:3px;margin-top:15px}.mono-tile{padding:4px 3px;border-radius:5px}.mono-tile::before{height:3px;margin-bottom:3px}.mono-tile strong{font-size:9px}.mono-tile small{font-size:8px}.mono-tile .mono-owner{font-size:8px}.mono-token{width:16px;height:16px;font-size:8px;border-width:1px}.mono-tokens{right:2px;bottom:2px;gap:1px}.monopoly-center{padding:5px}.mono-center-mark{font-size:21px}.mono-center-kicker{font-size:7px;margin-top:3px}.monopoly-center h3{font-size:14px;margin-top:5px}.monopoly-center #turn-detail{font-size:9px;line-height:1.4;margin:4px 0}.mono-die{height:31px;width:31px;font-size:18px;margin-bottom:6px;border-radius:8px}.monopoly-center .mono-primary,.monopoly-center .mono-secondary{font-size:10px;padding:8px 12px}.mono-board-status{font-size:9px;line-height:1.3;margin-top:5px;min-height:12px}.monopoly-board-foot{font-size:8px}.monopoly-side{grid-template-columns:1fr}.mono-preview-art{height:180px}.mono-dialog-layout{grid-template-columns:120px minmax(0,1fr);gap:15px}.mono-dialog{padding:14px}.mono-dialog-content h2{font-size:20px}.mono-card-numbers{gap:5px;margin:10px 0}.mono-card-numbers span{padding:7px;font-size:10px}.mono-dialog-actions{margin-top:10px}}
+@media(max-width:350px){.game-switch a{padding-inline:12px}.mono-tile strong{font-size:8px}.mono-tile small{font-size:7px}.mono-center-kicker,.mono-board-status{display:none}.mono-dialog-layout{grid-template-columns:1fr}.mono-dialog-art{max-width:120px;max-height:160px}.monopoly-heading h1{font-size:24px}}
+@media(prefers-reduced-motion:reduce){.monopoly-page *{animation:none!important;transition:none!important}}
+/* Each stop has its own illustration; the label remains readable over it. */
+.mono-tile{padding:0;isolation:isolate}
+.mono-tile::before{position:absolute;inset:0 0 auto;height:4px;margin:0;z-index:2}
+.mono-tile-image{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-1}
+.mono-tile-info{position:absolute;inset:auto 0 0;display:flex;flex-direction:column;align-items:flex-start;padding:2px 4px;background:#fffef5ed;line-height:1.1}
+.mono-tile-info strong,.mono-tile-info small{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mono-tile-info strong{font-size:clamp(8px,.8vw,10px);color:#425b36}.mono-tile-info small{font-size:clamp(7px,.7vw,9px);margin-top:2px;color:#77856d}
+.mono-tile .mono-owner{position:absolute;top:7px;left:4px;margin:0;padding:2px 4px;border-radius:4px;background:#5f7d51ed;color:#fff;font-size:8px;line-height:1.2;z-index:3}
+.mono-tile .mono-owner.owner-1{background:#bc8069ed;color:#fff}
+.mono-tokens{top:6px;bottom:auto;z-index:3}
+.mono-die{width:54px;height:54px;overflow:hidden}.mono-die img{width:100%;height:100%;object-fit:cover;border-radius:inherit}
+@media(max-width:700px){.mono-tile{padding:0}.mono-tile::before{height:3px}.mono-tile-info{padding:2px 3px}.mono-tile .mono-owner{top:4px;left:2px;font-size:7px;padding:1px 2px}.mono-tokens{top:4px}.mono-die{width:38px;height:38px}}
