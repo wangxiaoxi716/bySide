@@ -1,5 +1,5 @@
 import { BOARD, EVENT_CARDS, MAX_ROUNDS, PASS_BONUS, START_BALANCE, createGame, scorePlayers, rollDice, decideProperty, acknowledgeEvent, endTurn, shouldBotBuy } from './monopoly-core.js';
-import { TILE_ART, DICE_ART } from './monopoly-assets.js';
+import { TILE_ART, DICE_ART, monopolyAvatar } from './monopoly-assets.js';
 import { icon, esc } from './stage.js';
 import { createChessSession } from './chess-session.js';
 import { installGameProjectionLink } from './game-ar-control.js';
@@ -31,6 +31,10 @@ function humanTurn() { return game.players[game.turn].kind === 'human'; }
 function cancelBot() { epoch++; clearTimeout(botTimer); botTimer = null; }
 function isNewGame() { return game.round === 1 && game.turn === 0 && game.dice === null && game.owners.every(owner => owner === null); }
 function currency(value) { return Number(value).toLocaleString('zh-CN'); }
+function avatarContent(playerIndex) {
+  const src = monopolyAvatar(game.mode, playerIndex);
+  return src ? `<img src="${src}" alt="" width="96" height="96">` : '友';
+}
 
 function renderBoard() {
   tileElements.forEach((element, index) => {
@@ -40,7 +44,7 @@ function renderBoard() {
     const detail = tile.type === 'property' ? `${tile.price} · 租 ${tile.rent}` : tile.detail || (tile.type === 'event' ? '抽取事件卡' : '');
     const playersText = playersHere.map(playerIndex => game.players[playerIndex].name).join('、');
     element.setAttribute('aria-label', `${tile.name}，${detail}${ownerText ? `，${ownerText}` : ''}${playersText ? `，${playersText}在这里` : ''}`);
-    element.innerHTML = `<img class="mono-tile-image" src="${TILE_ART[index]}" alt="" width="360" height="360"><div class="mono-tile-info"><strong>${esc(tile.name)}</strong><small>${esc(detail)}</small></div>${owner === null ? '' : `<span class="mono-owner owner-${owner}">${esc(game.players[owner].name)}的</span>`}<div class="mono-tokens" aria-hidden="true">${playersHere.map(playerIndex => `<span class="mono-token token-${playerIndex}">${playerIndex === 0 ? '我' : game.mode === 'solo' ? '芽' : '友'}</span>`).join('')}</div>`;
+    element.innerHTML = `<img class="mono-tile-image" src="${TILE_ART[index]}" alt="" width="360" height="360"><div class="mono-tile-info"><strong>${esc(tile.name)}</strong><small>${esc(detail)}</small></div>${owner === null ? '' : `<span class="mono-owner owner-${owner}">${esc(game.players[owner].name)}的</span>`}<div class="mono-tokens" aria-hidden="true">${playersHere.map(playerIndex => `<span class="mono-token token-${playerIndex}">${avatarContent(playerIndex)}</span>`).join('')}</div>`;
   });
 }
 
@@ -48,7 +52,7 @@ function renderPlayers() {
   const scores = scorePlayers(game);
   $('#player-list').innerHTML = game.players.map((player, index) => {
     const count = game.owners.filter(owner => owner === index).length;
-    return `<div class="mono-player${game.turn === index && game.phase !== 'ended' ? ' is-active' : ''}"><span class="mono-player-avatar">${index === 0 ? '我' : game.mode === 'solo' ? '芽' : '友'}</span><div><strong>${esc(player.name)}${game.turn === index && game.phase !== 'ended' ? ' · 当前回合' : ''}</strong><small>地产 ${count} 处 · 总资产 ${currency(scores[index])}</small></div><div class="mono-player-money">${currency(player.money)}<small>小叶币</small></div></div>`;
+    return `<div class="mono-player${game.turn === index && game.phase !== 'ended' ? ' is-active' : ''}"><span class="mono-player-avatar" aria-hidden="true">${avatarContent(index)}</span><div><strong>${esc(player.name)}${game.turn === index && game.phase !== 'ended' ? ' · 当前回合' : ''}</strong><small>地产 ${count} 处 · 总资产 ${currency(scores[index])}</small></div><div class="mono-player-money">${currency(player.money)}<small>小叶币</small></div></div>`;
   }).join('');
 }
 

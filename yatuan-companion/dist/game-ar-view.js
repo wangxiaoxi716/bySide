@@ -1,6 +1,6 @@
 import { esc } from './stage.js';
 import { BOARD, MAX_ROUNDS, createGame as createMonopolyGame } from './monopoly-core.js';
-import { TILE_ART, DICE_ART } from './monopoly-assets.js';
+import { TILE_ART, DICE_ART, monopolyAvatar } from './monopoly-assets.js';
 
 const titles = { chess: '五子棋', 'tic-tac-toe': '井字棋', monopoly: '芽团大富翁' };
 const tilePositions = [[5,1],[5,2],[5,3],[5,4],[5,5],[4,5],[3,5],[2,5],[1,5],[1,4],[1,3],[1,2],[1,1],[2,1],[3,1],[4,1]];
@@ -52,7 +52,11 @@ function ticTacToeBoard(game) {
 function monopolyBoard(game) {
   const places = BOARD.map((tile, index) => {
     const owner = game.owners[index];
-    const occupants = game.players.map((player, number) => player.position === index ? `<b class="gar-token token-${number}">${number ? '2' : '1'}</b>` : '').join('');
+    const occupants = game.players.map((player, number) => {
+      if (player.position !== index) return '';
+      const avatar = monopolyAvatar(game.mode, number);
+      return `<b class="gar-token token-${number}">${avatar ? `<img src="${avatar}" alt="">` : '2'}</b>`;
+    }).join('');
     const [row, column] = tilePositions[index];
     return `<div class="gar-town-tile${owner === 0 || owner === 1 ? ` owner-${owner}` : ''}" style="grid-row:${row};grid-column:${column}"><img src="${TILE_ART[index]}" alt=""><span>${esc(tile.name)}</span><div class="gar-tokens">${occupants}</div></div>`;
   }).join('');
@@ -73,7 +77,10 @@ function monopolyView(snapshot) {
   const game = candidate && Array.isArray(candidate.players) && candidate.players.length === 2 && Array.isArray(candidate.owners) && candidate.owners.length === BOARD.length ? candidate : createMonopolyGame();
   const player = game.players[game.turn] || game.players[0];
   const status = game.phase === 'ended' && game.result ? game.result.winner === null ? '平分秋色' : `${game.players[game.result.winner]?.name || '伙伴'}获胜` : `轮到${player.name}`;
-  const players = game.players.map((p, index) => `<div class="gar-player player-${index}${game.turn === index && game.phase !== 'ended' ? ' current' : ''}"><span>${index + 1}</span><strong>${esc(p.name)}</strong><b>${money(p.money)}</b></div>`).join('');
+  const players = game.players.map((p, index) => {
+    const avatar = monopolyAvatar(game.mode, index);
+    return `<div class="gar-player player-${index}${game.turn === index && game.phase !== 'ended' ? ' current' : ''}"><span aria-hidden="true">${avatar ? `<img src="${avatar}" alt="">` : '2'}</span><strong>${esc(p.name)}</strong><b>${money(p.money)}</b></div>`;
+  }).join('');
   const card = snapshot?.lastCard;
   const detail = card?.title ? `${card.title} · ${card.description || ''}` : game.history?.at(-1) || '掷骰子，开始小镇旅行。';
   return { board: monopolyBoard(game), status, meta: players, detail: String(detail).slice(0, 100), players: true };

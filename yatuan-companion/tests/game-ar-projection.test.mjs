@@ -103,6 +103,12 @@ test('projection renders actual board moves, turn information and the town game 
   assert.match(townHtml, /&lt;script&gt;!/);
   assert.doesNotMatch(townHtml, /<script>/);
   assert.match(townHtml, /gar-token token-0/);
+  assert.match(townHtml, /avatars\/player\.jpg/);
+  assert.match(townHtml, /avatars\/yatuan\.jpg/);
+
+  const localHtml = renderGameProjection({ game: 'monopoly', snapshot: { kind: 'monopoly', game: createMonopoly('local') }, connected: true });
+  assert.match(localHtml, /avatars\/player\.jpg/);
+  assert.doesNotMatch(localHtml, /avatars\/yatuan\.jpg/, 'a human second player is not represented as Yatuan');
 });
 
 test('selection is constrained and an existing projection is switched without navigation', () => {

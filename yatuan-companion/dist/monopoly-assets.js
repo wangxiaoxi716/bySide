@@ -9,3 +9,15 @@ export const TILE_ART = Object.freeze([
 export const DICE_ART = Object.freeze(
   Array.from({ length: 6 }, (_, index) => `assets/monopoly/dice/die-${index + 1}.jpg`),
 );
+
+export const PLAYER_AVATARS = Object.freeze({
+  player: 'assets/monopoly/avatars/player.jpg',
+  yatuan: 'assets/monopoly/avatars/yatuan.jpg',
+});
+
+// The second player is a person in local mode, not the Yatuan opponent.
+export function monopolyAvatar(mode, playerIndex) {
+  if (playerIndex === 0) return PLAYER_AVATARS.player;
+  if (playerIndex === 1 && mode === 'solo') return PLAYER_AVATARS.yatuan;
+  return null;
+}

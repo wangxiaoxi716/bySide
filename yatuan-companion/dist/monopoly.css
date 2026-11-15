@@ -57,3 +57,10 @@
 .mono-tokens{top:6px;bottom:auto;z-index:3}
 .mono-die{width:54px;height:54px;overflow:hidden}.mono-die img{width:100%;height:100%;object-fit:cover;border-radius:inherit}
 @media(max-width:700px){.mono-tile{padding:0}.mono-tile::before{height:3px}.mono-tile-info{padding:2px 3px}.mono-tile .mono-owner{top:4px;left:2px;font-size:7px;padding:1px 2px}.mono-tokens{top:4px}.mono-die{width:38px;height:38px}}
+/* Generated player portraits are shared with the AR projection. */
+.mono-player{grid-template-columns:40px 1fr auto}
+.mono-player-avatar{width:38px;height:38px;overflow:hidden}
+.mono-token{width:25px;height:25px;overflow:hidden}
+.mono-player-avatar img,.mono-token img{display:block;width:100%;height:100%;object-fit:cover;border-radius:50%}
+@media(max-width:1000px){.mono-player{grid-template-columns:35px 1fr auto}.mono-player-avatar{width:33px;height:33px}.mono-token{width:22px;height:22px}}
+@media(max-width:700px){.mono-token{width:20px;height:20px}}
