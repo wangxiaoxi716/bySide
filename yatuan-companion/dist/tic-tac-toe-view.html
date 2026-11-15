@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f5ed"><title>芽团 · 井字棋窗口</title>
+  <link rel="icon" href="icon.svg"><link rel="stylesheet" href="tic-tac-toe.css">
+</head>
+<body class="ttt-view">
+  <main>
+    <header><a href="tic-tac-toe.html">✳ 芽团 / 井字棋</a><span id="connection" role="status">正在寻找主棋室…</span></header>
+    <section class="ttt-view-card">
+      <h1 id="view-title">和家人一起，慢慢下。</h1>
+      <p id="view-description">本机双窗口演示：你执 O，主棋室执 X。两个窗口需要在同一浏览器、同一网址下打开。</p>
+      <div class="ttt-view-actions"><strong id="view-turn" aria-live="polite">等待主棋室</strong><span id="view-count"></span></div>
+      <div class="ttt-board" id="view-board" role="group" aria-label="井字棋棋盘，家人执 O"></div>
+      <div class="ttt-view-actions"><span id="view-selection">选择一个空格</span><button id="view-confirm" type="button" disabled>确认落子</button><button id="view-fullscreen" type="button" hidden>进入全屏</button></div>
+      <section class="ttt-messages"><strong>棋盘边的家常</strong><ul id="view-messages" aria-live="polite"></ul><form id="view-chat"><label for="view-chat-input" class="ttt-visually-hidden">给家人留言</label><input id="view-chat-input" maxlength="140" placeholder="给家人说句话…" autocomplete="off"><button type="submit">发送</button></form></section>
+    </section>
+  </main>
+  <script type="module" src="tic-tac-toe-view.js"></script>
+</body>
+</html>
