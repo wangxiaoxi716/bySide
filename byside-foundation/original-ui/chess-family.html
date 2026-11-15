@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f5ed">
+  <title>和你慢慢下一盘 · 芽团长辈端</title>
+  <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./chess-view.css">
+</head>
+<body class="cv-family" data-chess-view="family">
+  <main class="cv-family-wrap">
+    <header class="cv-header">
+      <a class="cv-brand" href="./chess.html" aria-label="回到芽团棋室"><span class="cv-brand-mark" aria-hidden="true">✳</span><span>芽团<span class="cv-brand-divider">/</span>一起下棋</span></a>
+      <span class="cv-demo-badge">长辈端 · 本机模拟</span>
+    </header>
+    <section class="cv-intro">
+      <div><p class="cv-eyebrow">一人一端，同一盘棋</p><h1>慢慢下，<span>我们不赶时间。</span></h1><p class="cv-intro-copy">这是奶奶看到的棋桌。下棋的时候，也聊聊今天。</p></div>
+      <div class="cv-connection" id="view-connection" role="status"><i></i><span>正在寻找主页面…</span></div>
+    </section>
+    <section class="cv-no-room" id="view-no-room" hidden>
+      <span class="cv-empty-symbol" aria-hidden="true">♧</span><h2>先在棋室里约一盘吧</h2><p>请从主棋室点击「打开长辈端」来到这里，才能看到同一盘棋。</p><a class="cv-button cv-primary" href="./chess.html">打开芽团棋室 <span aria-hidden="true">↗</span></a>
+    </section>
+    <div class="cv-family-grid" id="view-content">
+      <section class="cv-board-card" aria-labelledby="family-board-title">
+        <div class="cv-board-heading"><div><span class="cv-section-number">01 / 棋桌</span><h2 id="family-board-title">和家人，一起下五子棋</h2></div><span class="cv-white-pill"><i></i> 您执白子</span></div>
+        <div class="cv-turn-banner" aria-live="polite"><span id="family-turn">等家人打开棋室</span><small id="family-turn-detail">这里只演示本机两端，不会拨打电话。</small></div>
+        <div class="cv-board-shell"><div class="cv-coordinates cv-coordinates-top" aria-hidden="true"></div><div class="cv-coordinates cv-coordinates-side" aria-hidden="true"></div><div class="cv-board" id="family-board" role="grid" aria-label="五子棋棋盘，奶奶执白子。方向键选择位置，回车确认落子"></div></div>
+        <div class="cv-board-bottom"><span id="family-move-count">第 0 手</span><span><i class="cv-last-marker"></i> 小圆点标记上一手</span></div>
+        <button class="cv-button cv-primary cv-confirm" id="family-confirm" disabled>等待轮到您</button>
+        <p class="cv-board-instruction">先点棋盘选择位置，再按「确认落子」。横、竖或斜着连成五子就赢了。</p>
+      </section>
+      <aside class="cv-family-aside">
+        <section class="cv-person-card">
+          <div class="cv-person-top"><div class="cv-grandma-avatar" aria-hidden="true">
+            <svg viewBox="0 0 120 120" fill="none"><circle cx="60" cy="60" r="59" fill="#e8e5d6"/><path d="M26 117c0-24 14-36 34-36s34 12 34 36" fill="#8a9a73"/><path d="M49 82v13l11 8 11-8V82" fill="#e8c4a0"/><path d="M34 44c-5-14 6-24 16-24 3-11 23-12 28-1 17 2 22 15 16 26" fill="#c3c0b5"/><ellipse cx="61" cy="59" rx="28" ry="32" fill="#f6d9b5"/><path d="M34 46c5-17 14-9 24-20 4 11 23 12 30 13" fill="#d7d4ca"/><path d="M34 47c-7 18-5 26 5 30M88 45c8 18 6 25-4 33" stroke="#c3c0b5" stroke-width="8" stroke-linecap="round"/><g stroke="#777b68" stroke-width="2"><rect x="39" y="52" width="19" height="14" rx="6"/><rect x="65" y="52" width="19" height="14" rx="6"/><path d="M58 57h7m-27-1-5-2m52 2 5-2"/></g><path d="M45 59q4-5 8 0m17 0q4-5 8 0" stroke="#6e6254" stroke-width="2" stroke-linecap="round"/><path d="M54 75q7 6 14 0" stroke="#ac8060" stroke-width="2.5" stroke-linecap="round"/><circle cx="43" cy="71" r="4" fill="#eab8a1"/><circle cx="79" cy="71" r="4" fill="#eab8a1"/><path d="m46 93 14 12 15-12" stroke="#f2edda" stroke-width="3" stroke-linecap="round"/><circle cx="60" cy="114" r="2" fill="#e5e5cf"/></svg>
+          </div><div><p class="cv-eyebrow">今天的棋友</p><h2>奶奶的棋桌</h2><p>一盘棋，一会儿家常</p></div></div>
+          <div class="cv-person-bubble" id="family-elder-speech">坐好啦，等你一起下棋。</div>
+          <div class="cv-person-foot"><span><i class="cv-small-stone"></i> 家人执黑</span><span><i class="cv-small-stone cv-stone-white"></i> 奶奶执白</span></div>
+        </section>
+        <section class="cv-chat-card" aria-labelledby="family-chat-title"><div class="cv-chat-heading"><h2 id="family-chat-title">棋盘边的家常</h2><span>模拟消息</span></div><div class="cv-messages" id="family-messages" role="log" aria-live="polite"><p class="cv-message-empty">落下一颗棋，也留下一句话。</p></div><div class="cv-quick-chat"><button data-chat="慢慢来，我不着急。">慢慢来，不着急</button><button data-chat="这一步下得真好！">这步下得真好</button><button data-chat="今天吃饭了吗？">今天吃饭了吗</button></div><form class="cv-chat-form" id="family-chat-form"><label class="cv-sr-only" for="family-chat-input">给家人留言</label><input id="family-chat-input" maxlength="160" placeholder="给家人说句话…" autocomplete="off"><button type="submit" aria-label="发送模拟消息">发送 <span aria-hidden="true">↗</span></button></form><p class="cv-chat-feedback" id="family-feedback" role="status"></p></section>
+        <div class="cv-helper"><span aria-hidden="true">✳</span><p><strong>芽团在旁边陪着</strong>主棋室选择「和家人一起」，再取消勾选「模拟长辈自动落子」，就能在这里替奶奶落子。消息与棋盘只在这台电脑的同一浏览器内同步。</p></div>
+      </aside>
+    </div>
+    <footer class="cv-footer"><span>一盘棋的时间，好好陪在一起。</span><span>本机双端演示 · 未连接真实家人</span></footer>
+  </main>
+  <script type="module" src="./chess-view.js"></script>
+</body>
+</html>

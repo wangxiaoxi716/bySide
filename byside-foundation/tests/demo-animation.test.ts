@@ -1,0 +1,50 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { getMotionAsset } from '../original-ui/animations.js';
+import { characterArt } from '../original-ui/stage.js';
+import { DEMO_STEPS, getDemoCharacterState, getDemoState, goToStep, pauseDemo, resumeDemo, startDemo, stopDemo } from '../original-ui/demo.js';
+
+test('demo uses the supplied animations and holds the bud and bloom when paused or finished', t => {
+  t.mock.timers.enable({ apis: ['Date', 'setInterval'] });
+  t.after(() => stopDemo());
+  const selected = { character: 'human', motion: 'speaking', mood: 'happy', growthStage: 0, flowerCount: 3, flowerStyle: 'cream' };
+  startDemo();
+  assert.equal(getDemoCharacterState(selected).character, 'yatuan');
+  const expected = ['yatuan-speaking.webp', 'yatuan-eating.webp', 'yatuan-curious.webp', 'yatuan-happy.webp'];
+  for (let index = 0; index < expected.length; index++) {
+    goToStep(index);
+    assert.ok(getMotionAsset(getDemoCharacterState(selected)).endsWith(expected[index]));
+  }
+  goToStep(4);
+  assert.match(getMotionAsset(getDemoCharacterState(selected)), /growth-05\.png$/);
+  t.mock.timers.tick(1500);
+  const bud = getDemoCharacterState(selected);
+  assert.match(bud.speech, /小花苞/);
+  assert.match(getMotionAsset(bud), /growth-06\.png$/);
+  assert.doesNotMatch(characterArt(bud), /bud-stem|grown-flower/);
+  pauseDemo(); t.mock.timers.tick(5000);
+  assert.equal(getMotionAsset(getDemoCharacterState(selected)), getMotionAsset(bud));
+  resumeDemo();
+  goToStep(5);
+  assert.match(getMotionAsset(getDemoCharacterState(selected)), /growth-06\.png$/);
+  resumeDemo(); t.mock.timers.tick(1500);
+  const bloom = getDemoCharacterState(selected);
+  assert.match(getMotionAsset(bloom), /growth-08\.png$/);
+  assert.equal(bloom.flowerCount, 1);
+  assert.doesNotMatch(characterArt(bloom), /bud-stem|grown-flower/);
+  t.mock.timers.tick(2000);
+  assert.equal(getDemoState().done, true);
+  assert.match(getMotionAsset(getDemoCharacterState(selected)), /growth-08\.png$/);
+  assert.equal(DEMO_STEPS[5].title, '花朵绽放');
+  for (let frame = 5; frame <= 8; frame++) assert.ok(existsSync(resolve(__dirname, `../original-ui/assets/motions/yatuan-growth-${String(frame).padStart(2, '0')}.png`)));
+  stopDemo();
+  assert.equal(getDemoCharacterState(selected).character, 'human');
+  assert.deepEqual(getDemoCharacterState(selected), selected);
+  goToStep(4);
+  assert.equal(getDemoState().paused, true);
+  assert.match(getMotionAsset(getDemoCharacterState(selected)), /growth-06\.png$/, 'jumping directly to the bud should show its settled shape');
+  goToStep(5);
+  assert.match(getMotionAsset(getDemoCharacterState(selected)), /growth-08\.png$/, 'jumping directly to bloom should show the flower');
+});

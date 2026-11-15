@@ -1,0 +1,70 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "sqlite"
+  url      = "file:./byside.db"
+}
+model Companion {
+  id             String @id @default("default")
+  character      String @default("yatuan")
+  customImage    String?
+  personality    String @default("gentle")
+  mood           String @default("happy")
+  motion         String @default("idle")
+  speech         String @default("回来啦，今天想聊些什么？")
+  energy         Int @default(86)
+  intimacy       Int @default(12)
+  growth         Int @default(18)
+  growthStage    Int @default(0)
+  flowerStyle    String @default("cream")
+  flowerCount    Int @default(1)
+  projectionX    Int @default(32)
+  projectionY    Int @default(32)
+  projectionScale Float @default(1)
+  showStats      Boolean @default(true)
+  lastChatGrowth DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+model Message {
+  id        String @id @default(uuid())
+  sessionId String @default("default")
+  role      String
+  text      String
+  createdAt DateTime @default(now())
+}
+model Memory {
+  id        String @id @default(uuid())
+  text      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+model GrowthEvent {
+  id        String @id @default(uuid())
+  source    String
+  eventKey  String @unique
+  kind      String
+  amount    Int
+  createdAt DateTime @default(now())
+}
+model Event {
+  id        Int @id @default(autoincrement())
+  type      String
+  data      String
+  createdAt DateTime @default(now())
+}
+model Extension {
+  id          String @id
+  name        String
+  url         String
+  permissions String
+  tokenHash   String
+  createdAt   DateTime @default(now())
+}
+model Device {
+  id           String @id
+  name         String
+  capabilities String
+  updatedAt    DateTime @updatedAt
+}

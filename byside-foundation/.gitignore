@@ -1,0 +1,15 @@
+node_modules/
+server/dist/
+web/dist/
+server/prisma/*.db*
+data/
+.env
+*.log
+
+*.tsbuildinfo
+native-voice/.build/
+
+.DS_Store
+.playwright-mcp/
+.env.*
+!.env.example
