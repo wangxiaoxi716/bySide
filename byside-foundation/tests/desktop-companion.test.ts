@@ -53,3 +53,18 @@ test('camera denial keeps voice available and permits an explicit retry', async 
   denied = false; await controller.wake(); assert.equal(controller.getStatus().observing, true);
   await controller.stop(); options.onReady(); assert.equal(controller.getStatus().active, false, 'late callbacks cannot revive a stopped session');
 });
+
+test('a canceled restart waits for the previous session to close and never reopens devices', async () => {
+  let release!: () => void, opened = 0;
+  const controller = createDesktopCompanion({ config: () => ({ intervalSeconds: 10 }), stopDemo() {},
+    createCamera: () => ({ start: async () => { opened++; return { image: 'frame', shared: false }; }, stop() {} }),
+    createVoice: (options: any) => ({ start: async () => { options.onReady(); return true; }, send: () => true, stop: () => new Promise<void>(done => { release = done; }) }),
+  });
+  await controller.start({});
+  const stopped = controller.stop();
+  const restarting = controller.start({});
+  const canceled = controller.stop();
+  release(); await Promise.all([stopped, canceled]);
+  assert.equal(await restarting, false);
+  assert.equal(opened, 1); assert.equal(controller.getStatus().active, false);
+});

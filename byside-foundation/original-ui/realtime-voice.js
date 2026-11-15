@@ -130,6 +130,7 @@ export function createRealtimeVoiceSession({ fullDuplex = false, desktopVision =
           return;
         }
         let message; try { message = JSON.parse(event.data); } catch { fail('实时语音返回了无效数据', current); return; }
+        if (!message || typeof message.type !== 'string') { fail('实时语音返回了无效数据', current); return; }
         if (message.type === 'session.ready') {
           if (current.ready) return;
           current.ready = true;
