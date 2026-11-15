@@ -1,6 +1,6 @@
 # 大富翁掷骰和逐格移动
 > Task version: v1
-> Status: checking
+> Status: completed
 
 ## Goal
 掷骰时先看到骰子转动，再看到角色逐格走到目的地，桌面投影同步这些过程。

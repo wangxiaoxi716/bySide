@@ -55,13 +55,7 @@
 ## 为大富翁增加骰子转动和棋子逐格行走动画，并同步到投影
 
 - ID: TF-20261115-90826c
-- Status: in_progress
-- Priority: normal
-- Owner: Unknown
-- Source: 用户请求
-- Kind: capability
-- Added: 2026-11-15
-- Updated: 2026-11-15
+- Status: done
 - Goal: 为大富翁增加骰子转动和棋子逐格行走动画，并同步到投影
-- Task: `TaskFlowDocs/2026-11-15-monopoly-movement/`
-- Next action: 用户查看动画和投影效果，按需调整或另行要求推送。
+- Task: `TaskFlowDocs/achieved/2026-11-15-monopoly-movement/`
+- Next action: None — completed and archived.

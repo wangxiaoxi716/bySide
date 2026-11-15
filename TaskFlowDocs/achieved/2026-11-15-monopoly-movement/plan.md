@@ -1,6 +1,6 @@
 # Plan — 大富翁掷骰和逐格移动
 > Task version: v1
-> Status: checking
+> Status: completed
 
 ## Spec Pointers
 - `spec.md`
