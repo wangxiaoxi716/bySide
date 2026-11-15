@@ -6,6 +6,7 @@ import { createGame as createTicTacToe, playMove as playTicTacToe } from '../ori
 import { createGame as createMonopoly, rollDice, decideProperty } from '../original-ui/monopoly-core.js';
 import { createGameProjectionController, validGameSelection, gameProjectionUrl, openGameProjection, GAME_AR_MESSAGE, GAME_AR_WINDOW } from '../original-ui/game-ar-control.js';
 import { renderGameProjection } from '../original-ui/game-ar-view.js';
+import { buildRollFrames } from '../original-ui/monopoly-animation.js';
 
 function roomHarness() {
   let nextId = 0;
@@ -103,6 +104,49 @@ test('projection renders actual board moves, turn information and the town game 
   assert.match(townHtml, /&lt;script&gt;!/);
   assert.doesNotMatch(townHtml, /<script>/);
   assert.match(townHtml, /gar-token token-0/);
+  assert.match(townHtml, /avatars\/player\.jpg/);
+  assert.match(townHtml, /avatars\/yatuan\.jpg/);
+
+  const localHtml = renderGameProjection({ game: 'monopoly', snapshot: { kind: 'monopoly', game: createMonopoly('local') }, connected: true });
+  assert.match(localHtml, /avatars\/player\.jpg/);
+  assert.match(localHtml, /avatars\/partner\.jpg/);
+  assert.doesNotMatch(localHtml, /avatars\/yatuan\.jpg/, 'a human second player is not represented as Yatuan');
+});
+
+test('projection follows the rolling die and each intermediate Monopoly tile before settlement', t => {
+  const h = roomHarness();
+  t.after(() => h.close());
+  const owner = h.create({ owner: true, roomId: 'animated-town' });
+  const seen = [];
+  const controller = createGameProjectionController({ createSession: h.create, onUpdate: view => seen.push(view) });
+  t.after(() => controller.clear());
+  const game = createMonopoly('local');
+  const resolved = rollDice(game, () => 0.4);
+  const frames = buildRollFrames(game, resolved);
+  controller.select({ game: 'monopoly', room: 'animated-town' });
+
+  const rolling = frames.find(frame => frame.phase === 'rolling');
+  owner.publish({ kind: 'monopoly', game, presentation: rolling }); h.flush();
+  let html = renderGameProjection(seen.at(-1));
+  assert.match(html, /gar-die is-rolling/);
+  assert.match(html, /正在掷骰子/);
+  assert.match(html, /die-1\.jpg/);
+
+  for (const frame of frames.filter(item => item.phase === 'moving')) {
+    owner.publish({ kind: 'monopoly', game, presentation: frame }); h.flush();
+    html = renderGameProjection(seen.at(-1));
+    assert.match(html, new RegExp(`data-position="${frame.positions[0]}"[^>]*>.*?gar-token token-0 is-stepping`));
+    assert.match(html, new RegExp(`第 ${frame.step} / ${frame.dice} 步`));
+    assert.equal(seen.at(-1).snapshot.game.players[0].position, 0, 'settlement has not happened yet');
+  }
+  owner.publish({ kind: 'monopoly', game: resolved, presentation: null }); h.flush();
+  html = renderGameProjection(seen.at(-1));
+  assert.match(html, /data-position="3"[^>]*>.*?gar-token token-0/);
+  assert.doesNotMatch(html, /is-stepping|is-rolling/);
+
+  const invalid = renderGameProjection({ game: 'monopoly', snapshot: { kind: 'monopoly', game, presentation: { phase: 'moving', dice: 3, positions: [2, 0], step: 1, previousPosition: '<script>' } }, connected: true });
+  assert.doesNotMatch(invalid, /<script>|is-stepping/);
+  assert.match(invalid, /data-position="0"[^>]*>.*?gar-token token-0/);
 });
 
 test('selection is constrained and an existing projection is switched without navigation', () => {

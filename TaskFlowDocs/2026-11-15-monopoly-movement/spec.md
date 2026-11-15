@@ -8,7 +8,7 @@
 游戏规则仍由 `monopoly-core.js` 负责；动画仅持有独立的展示快照，直至应用最终规则状态。投影订阅并渲染相同展示快照。
 
 ## Project Structure / Affected Files
-大富翁动画与页面、样式、投影渲染与样式、相关自动测试。
+大富翁动画与页面、样式、投影渲染与样式、相关自动测试；同时同步到最新 main 新增的 `byside-foundation/original-ui` 对应入口。
 
 ## Interfaces, Data Flow, and Contracts
 展示快照提供阶段、骰面、各玩家的临时位置及正在走的步数；每个画面通过现有棋室消息发布，结束后发布最终游戏状态。
