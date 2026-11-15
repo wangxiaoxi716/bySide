@@ -34,22 +34,23 @@ function gomokuBoard(game) {
     return `<path d="M14 ${p}H266M${p} 14V266"/>`;
   }).join('');
   const stars = [[3,3],[3,11],[7,7],[11,3],[11,11]].map(([x,y]) => `<circle cx="${14 + x * 18}" cy="${14 + y * 18}" r="2.2"/>`).join('');
+  const labels = Array.from({ length: 15 }, (_, index) => `<text x="${14 + index * 18}" y="9" text-anchor="middle">${String.fromCharCode(65 + index)}</text><text x="2" y="${17 + index * 18}">${index + 1}</text>`).join('');
   const stones = board.map((value, index) => {
     if (value !== 1 && value !== 2) return '';
     const x = 14 + index % 15 * 18, y = 14 + Math.floor(index / 15) * 18;
     return `<circle class="gar-stone ${value === 1 ? 'black' : 'white'}${winning.has(index) ? ' winning' : ''}" cx="${x}" cy="${y}" r="8"/>${last === index ? `<circle class="gar-latest" cx="${x}" cy="${y}" r="2"/>` : ''}`;
   }).join('');
-  return `<div class="gar-gomoku" role="img" aria-label="同步的五子棋棋盘"><svg viewBox="0 0 280 280" aria-hidden="true"><g class="gar-lines">${lines}</g><g class="gar-stars">${stars}</g>${stones}</svg></div>`;
+  return `<div class="gar-gomoku" role="img" aria-label="同步的五子棋棋盘"><svg viewBox="0 0 280 280" aria-hidden="true"><g fill="#665b43" font-size="7" font-family="sans-serif">${labels}</g><g class="gar-lines">${lines}</g><g class="gar-stars">${stars}</g>${stones}</svg></div>`;
 }
 
 function ticTacToeBoard(game) {
   const board = game?.board || Array(9).fill(0);
   const winning = new Set(Array.isArray(game?.winningLine) ? game.winningLine : []);
   const last = game?.moves?.at(-1)?.index;
-  return `<div class="gar-ttt" role="img" aria-label="同步的井字棋棋盘">${board.map((value, index) => `<div class="gar-ttt-cell${winning.has(index) ? ' winning' : ''}${last === index ? ' latest' : ''}"><span class="${value === 2 ? 'o' : 'x'}">${value === 1 ? 'X' : value === 2 ? 'O' : ''}</span></div>`).join('')}</div>`;
+  return `<div class="gar-ttt" role="img" aria-label="同步的井字棋棋盘">${board.map((value, index) => `<div class="gar-ttt-cell${winning.has(index) ? ' winning' : ''}${last === index ? ' latest' : ''}"><small class="gar-cell-coord">${Math.floor(index / 3) + 1},${index % 3 + 1}</small><span class="${value === 2 ? 'o' : 'x'}">${value === 1 ? 'X' : value === 2 ? 'O' : ''}</span></div>`).join('')}</div>`;
 }
 
-function monopolyBoard(game, presentation) {
+function monopolyBoard(game, presentation, lastRoll) {
   const places = BOARD.map((tile, index) => {
     const owner = game.owners[index];
     const stepping = presentation?.phase === 'moving' && presentation.positions[game.turn] === index;
@@ -62,9 +63,10 @@ function monopolyBoard(game, presentation) {
     const [row, column] = BOARD_POSITIONS[index];
     return `<div class="gar-town-tile${owner === 0 || owner === 1 ? ` owner-${owner}` : ''}${stepping ? ' is-travelling' : ''}" data-position="${index}" style="grid-row:${row};grid-column:${column}"><img src="${TILE_ART[index]}" alt=""><span>${esc(tile.name)}</span><div class="gar-tokens">${occupants}</div></div>`;
   }).join('');
-  const face = presentation?.dice ?? game.dice;
+  const face = presentation?.dice ?? game.dice ?? lastRoll?.dice;
   const dice = Number.isInteger(face) && face >= 1 && face <= 6 ? `<img src="${DICE_ART[face - 1]}" alt="${face} 点">` : '<span>✦</span>';
-  return `<div class="gar-town" role="img" aria-label="同步的大富翁棋盘"><div class="gar-town-center"><small>THE LITTLE TOWN</small><strong>芽团大富翁</strong><div class="gar-die${presentation?.phase === 'rolling' ? ' is-rolling' : ''}">${dice}</div><span>第 ${esc(game.round)} / ${MAX_ROUNDS} 轮</span></div>${places}</div>`;
+  const lastRollLabel = lastRoll && Number.isInteger(face) && face >= 1 && face <= 6 ? `<span>${esc(lastRoll.player)}掷出 ${face} 点</span>` : '';
+  return `<div class="gar-town" role="img" aria-label="同步的大富翁棋盘"><div class="gar-town-center"><small>THE LITTLE TOWN</small><strong>芽团大富翁</strong><div class="gar-die${presentation?.phase === 'rolling' ? ' is-rolling' : ''}">${dice}</div>${lastRollLabel}<span>第 ${esc(game.round)} / ${MAX_ROUNDS} 轮</span></div>${places}</div>`;
 }
 
 function chessView(kind, snapshot) {
@@ -92,13 +94,15 @@ function monopolyView(snapshot) {
   const detail = presentation?.phase === 'moving' ? `第 ${presentation.step} / ${presentation.dice} 步`
     : presentation ? '骰子和棋盘正在同步。'
       : card?.title ? `${card.title} · ${card.description || ''}` : game.history?.at(-1) || '掷骰子，开始小镇旅行。';
-  return { board: monopolyBoard(game, presentation), status, meta: players, detail: String(detail).slice(0, 100), players: true };
+  return { board: monopolyBoard(game, presentation, snapshot?.voiceControlled ? snapshot.lastRoll : null), status, meta: players, detail: String(detail).slice(0, 100), players: true };
 }
 
 /** Render a read-only snapshot. Room state is never interpreted as HTML. */
 export function renderGameProjection({ game, snapshot, connected }) {
   if (!titles[game]) return '';
   const view = game === 'monopoly' ? monopolyView(snapshot) : chessView(game, snapshot);
-  const connection = connected ? '已同步棋室' : snapshot ? '棋室已离线 · 保留最后画面' : '等待棋室连接';
-  return `<div class="gar-layout" data-game="${game}">${view.board}<aside class="gar-info"><div class="gar-brand"><img src="icon.svg" alt=""><div><small>芽团 · 桌面游戏</small><strong>${titles[game]}</strong></div></div><div class="gar-status"><small>${esc(connection)}</small><strong>${esc(view.status)}</strong></div>${view.players ? `<div class="gar-players">${view.meta}</div>` : `<div class="gar-meta">${esc(view.meta)}</div>`}<p class="gar-detail">${esc(view.detail)}</p><div class="gar-footer">在游戏页面操作 · 投影同步显示</div></aside></div>`;
+  const connection = snapshot?.voiceControlled ? '语音对局' : connected ? '已同步棋室' : snapshot ? '棋室已离线 · 保留最后画面' : '等待棋室连接';
+  const instruction = snapshot?.voiceControlled ? '说出位置或操作，和芽团一起玩' : '在游戏页面操作 · 投影同步显示';
+  const caption = snapshot?.voiceControlled ? '<p class="gar-voice-caption" aria-live="polite"></p>' : '';
+  return `<div class="gar-layout" data-game="${game}">${view.board}<aside class="gar-info"><div class="gar-brand"><img src="icon.svg" alt=""><div><small>芽团 · 桌面游戏</small><strong>${titles[game]}</strong></div></div><div class="gar-status"><small>${esc(connection)}</small><strong>${esc(view.status)}</strong></div>${view.players ? `<div class="gar-players">${view.meta}</div>` : `<div class="gar-meta">${esc(view.meta)}</div>`}<p class="gar-detail">${esc(view.detail)}</p>${caption}<div class="gar-footer">${instruction}</div></aside></div>`;
 }

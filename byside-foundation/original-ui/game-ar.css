@@ -20,3 +20,5 @@
 @keyframes gar-step{0%{transform:translate(calc(var(--step-from-x) * var(--gar-step)),calc(var(--step-from-y) * var(--gar-step))) scale(.92)}50%{transform:translate(calc(var(--step-from-x) * var(--gar-step) / 2),calc(var(--step-from-y) * var(--gar-step) / 2 - 5px)) scale(1.08)}100%{transform:translate(0,0) scale(1)}}
 @keyframes gar-dice-roll{0%{transform:rotate(-12deg) scale(.93)}50%{transform:rotate(190deg) scale(1.08)}100%{transform:rotate(348deg) scale(.93)}}
 @media(prefers-reduced-motion:reduce){.gar-token.is-stepping,.gar-die.is-rolling{animation:none!important}}
+.gar-ttt-cell{position:relative}.gar-ttt-cell .gar-cell-coord{position:absolute;top:4px;left:6px;color:#82977b;font-size:9px;line-height:1}
+.gar-voice-caption{margin:0;padding:6px 8px;max-height:65px;overflow:auto;border-radius:8px;background:#fff5d9;color:#5f6248;font-size:9px;line-height:1.4;overflow-wrap:anywhere}.gar-voice-caption:empty{display:none}
