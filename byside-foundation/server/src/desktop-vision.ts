@@ -70,10 +70,11 @@ export class DesktopVisionSession {
   }
   async observe(question: string): Promise<DesktopObservation> {
     if (this.closed || this.paused) throw new Error('桌面观察已暂停，请先开启摄像头观察');
+    if (this.pending) { try { await this.pending; } catch {} }
+    if (this.closed || this.paused) throw new Error('桌面观察已结束');
     let frame = this.frame;
     if (!frame || Date.now() - frame.receivedAt > 2000) frame = await this.requestFrame();
     if (!frame || Date.now() - frame.receivedAt > 15000) throw new Error('暂时没有可用的桌面画面，请连接摄像头');
-    if (this.pending) { try { await this.pending; } catch {} }
     if (this.closed || this.paused) throw new Error('桌面观察已结束');
     if (this.result?.frame === frame && this.result.question === question) return this.result.observation;
     return this.analyze(frame, question);
