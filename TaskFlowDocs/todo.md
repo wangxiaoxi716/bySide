@@ -72,4 +72,4 @@
 - Updated: 2026-11-15
 - Goal: 大富翁已购买房间以头像和颜色醒目标识归属
 - Task: `TaskFlowDocs/2026-11-15-monopoly-property-owner/`
-- Next action: 用户查看房主标识，按需调整或另行要求推送。
+- Next action: 发起 PR，等待用户查看房主标识。
