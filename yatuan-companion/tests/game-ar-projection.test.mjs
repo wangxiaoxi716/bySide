@@ -108,6 +108,7 @@ test('projection renders actual board moves, turn information and the town game 
 
   const localHtml = renderGameProjection({ game: 'monopoly', snapshot: { kind: 'monopoly', game: createMonopoly('local') }, connected: true });
   assert.match(localHtml, /avatars\/player\.jpg/);
+  assert.match(localHtml, /avatars\/partner\.jpg/);
   assert.doesNotMatch(localHtml, /avatars\/yatuan\.jpg/, 'a human second player is not represented as Yatuan');
 });
 

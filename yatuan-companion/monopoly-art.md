@@ -61,6 +61,7 @@
 
 - 玩家原图：`dist/assets/monopoly/avatars/player-original.png`；网页图：`dist/assets/monopoly/avatars/player.jpg`。
 - 芽团原图：`dist/assets/monopoly/avatars/yatuan-original.png`；网页图：`dist/assets/monopoly/avatars/yatuan.jpg`。
+- 双人模式伙伴原图：`dist/assets/monopoly/avatars/partner-original.png`；网页图：`dist/assets/monopoly/avatars/partner.jpg`。
 
 玩家头像提示词：
 
@@ -69,3 +70,7 @@
 芽团头像提示词：
 
 > Use case: stylized-concept. Asset type: one square mascot portrait avatar for the same cozy board game, designed to be legible at very small size. Reference image 1 is the exact identity of Yatuan: a small round cream fuzzy character, two green leaves sprouting from the top, simple dark oval eyes, soft rosy cheeks, tiny smiling mouth. Preserve that character's appearance, and take the handcrafted wool-felt textures and muted palette from image 2. Show only one centered close-up Yatuan portrait, facing forward and filling most of the frame, with enough margin to include both leaves; pale sage-green circular backdrop and warm ivory corners. Tactile handmade miniature, soft natural light, charming and clean, matching a friendly human player avatar. No human, no extra character, no clothing, no hats, no words, no letters, no logo, no watermark, no collage.
+
+伙伴头像提示词：
+
+> Use case: stylized-concept. Asset type: one square illustrated avatar for the second human player in a cozy board game. Image 1 is the existing player portrait; image 2 is the matching mascot portrait. Create a different, friendly and gender-neutral companion character in the exact same handmade wool-felt storybook style and framing as image 1. Warm expressive face, round dark eyes and rosy cheeks, soft medium-length dark chestnut hair, no hat, wearing a muted terracotta cardigan. Head and shoulders centered, facing forward, face large and clear enough for a very small game token. A warm pale rose circular background, cream corners; gentle diffuse lighting, soft natural felt fibers. The companion must be clearly distinguishable from the hat-wearing first player and from the cream sprout mascot, while belonging to the same cozy game world. One person only, one single square image, no text, letters, numbers, logo, watermark, symbols, collage, or extra characters.

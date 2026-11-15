@@ -188,7 +188,8 @@ test('player and Yatuan portraits load and preserve the identity of a local huma
   assert.equal(monopolyAvatar('solo', 0), PLAYER_AVATARS.player);
   assert.equal(monopolyAvatar('solo', 1), PLAYER_AVATARS.yatuan);
   assert.equal(monopolyAvatar('local', 0), PLAYER_AVATARS.player);
-  assert.equal(monopolyAvatar('local', 1), null);
+  assert.equal(monopolyAvatar('local', 1), PLAYER_AVATARS.partner);
+  assert.notEqual(PLAYER_AVATARS.player, PLAYER_AVATARS.partner);
   for (const path of Object.values(PLAYER_AVATARS)) {
     const bytes = await readFile(new URL(`../dist/${path}`, import.meta.url));
     assert.ok(bytes.length > 1000, `${path} is missing or incomplete`);
