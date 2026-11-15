@@ -57,6 +57,21 @@ test('desktop capture refresh, periodic throttling, and pause cancellation', asy
   assert.equal(aborted, true); assert.equal(slowResults.length, 0, 'late analyses cannot update a paused session'); slow.close();
 });
 
+test('a failed background analysis can recover without exposing raw camera images', async () => {
+  const events: any[] = [];
+  let failing = true;
+  const session = new DesktopVisionSession({
+    analyze: async () => { if (failing) throw new Error('视觉模型暂时不可用'); return observation; },
+    emit: event => events.push(event), onObservation() {},
+  });
+  session.accept(image, 'retry-image');
+  await until(() => events.some(event => event.type === 'vision.error'), 'nonfatal visual error');
+  failing = false;
+  assert.equal((await session.observe('重试看看')).foodPresent, true);
+  assert.ok(!JSON.stringify(events).includes('data:image'), 'only structured observations leave the session image buffer');
+  session.close();
+});
+
 test('real voice bridge handles desktop tools and typed replies while audio continues', { timeout: 15000 }, async t => {
   const http = createServer(), provider = new WebSocketServer({ noServer: true });
   let upstream: WebSocket | undefined, frames = 0, analyses = 0, releaseVision!: () => void, aborted = false;
