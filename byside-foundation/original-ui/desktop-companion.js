@@ -8,7 +8,7 @@ export function createDesktopCompanion(overrides = {}) {
   const io = { createVoice: createRealtimeVoiceSession, createCamera: createDesktopCamera, config: getLiveConfig, stopDemo, ...overrides };
   const listeners = new Set();
   const initial = () => ({ active: false, localOwner: false, mode: 'idle', voiceState: 'idle', voiceWarning: '', error: '', message: '开始后，可以一边说话，一边让芽团看看桌面。', frameCount: 0, requestCount: 0, lastFrameAt: 0, observation: '', foods: [], previewImage: '', sourceLabel: '', shared: false, observing: false });
-  let status = initial(), voice, camera, video, timer, ready = false, generation = 0, captureTask;
+  let status = initial(), voice, camera, video, timer, ready = false, generation = 0, captureTask, stopping = Promise.resolve();
   const snapshot = () => ({ ...status, foods: status.foods.map(food => ({ ...food })) });
   function emit(patch) {
     status = { ...status, ...patch };
@@ -70,6 +70,8 @@ export function createDesktopCompanion(overrides = {}) {
     if (status.active) return true;
     const token = ++generation; video = element; io.stopDemo();
     emit({ ...initial(), active: true, localOwner: true, mode: 'starting', message: '正在连接桌面摄像头和豆包实时语音…' });
+    await stopping;
+    if (token !== generation) return false;
     const firstFrame = await openCamera();
     if (token !== generation) return false;
     voice = io.createVoice({
@@ -134,7 +136,8 @@ export function createDesktopCompanion(overrides = {}) {
   async function stop() {
     const current = voice; generation++; ready = false; voice = undefined; clearCamera();
     emit({ active: false, localOwner: false, mode: 'idle', voiceState: 'idle', error: '', voiceWarning: '', message: '陪伴已结束，麦克风和桌面观察已关闭。' });
-    await current?.stop();
+    if (current) stopping = Promise.resolve(current.stop());
+    await stopping;
   }
   return { start, stop, destroy: stop, wake, pauseObservation, handleText, getStatus: snapshot,
     subscribe(listener) { listeners.add(listener); listener(snapshot()); return () => listeners.delete(listener); },

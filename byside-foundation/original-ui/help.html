@@ -25,31 +25,32 @@
         <span class="eyebrow">YATUAN · FROM SCREEN TO TABLE</span>
         <h1>让芽团，<br><span>真正陪你坐在餐桌旁。</span></h1>
         <p class="lead">一台电脑、一根投影线、一个 USB 摄像头。把文字、声音和盘子里的画面接起来，让芽团听见你、看看这一餐，再把回应与动作投到桌面上。</p>
-        <div class="hero-tags"><span>电脑本地运行</span><span>语音唤醒</span><span>定时看餐盘</span><span>投影同步</span></div>
+        <div class="hero-tags"><span>电脑本地运行</span><span>豆包实时语音</span><span>定时看桌面</span><span>投影同步</span></div>
       </section>
 
-      <div class="intro-note"><strong>你已有的 DeepSeek API 可以接入这条链路。</strong> 以下采用支持图片输入的 <code>deepseek-flash</code>；密钥只需在你自己的电脑上填写。本文说明配置和验证方法，账户权限、真实餐盘识别、摄像头和麦克风仍需完成下方现场验收。36 秒成长演示是单独的演示功能。</div>
+      <div class="intro-note"><strong>桌面观察与豆包实时语音已接入同一陪伴会话。</strong> 后端使用已配置的图片模型分析桌面，豆包结合观察结果生成语音回答。设备与真实餐盘识别可按下方步骤现场确认。</div>
 
       <nav class="toc" aria-label="指南目录">
-        <a href="#prepare">01 准备什么</a><a href="#connect">02 接线与启动</a><a href="#voice">03 怎样唤醒</a><a href="#camera">04 怎样观察</a><a href="#verify">05 现场验收</a><a href="#animation">06 动作素材</a><a href="#trouble">07 常见问题</a>
+        <a href="#prepare">01 准备什么</a><a href="#connect">02 接线与启动</a><a href="#voice">03 怎样对话</a><a href="#camera">04 怎样观察</a><a href="#verify">05 现场验收</a><a href="#animation">06 动作素材</a><a href="#trouble">07 常见问题</a>
       </nav>
 
       <section class="section" id="prepare">
         <div class="section-head"><span class="section-no">01</span><h2>先准备这三样</h2></div>
         <div class="grid three">
           <article class="card"><span class="tag">HARDWARE</span><h3>电脑与外接设备</h3><p>电脑、HDMI 或 USB-C 投影连接线、投影仪、USB 摄像头。麦克风可用电脑自带或外接设备；声音从电脑或指定扬声器播放。</p></article>
-          <article class="card"><span class="tag">AI SERVICE</span><h3>DeepSeek 视觉模型</h3><p>使用 <code>deepseek-flash</code> 接收文字和摄像头图片，再返回回复。接口采用兼容 OpenAI 的 Chat Completions 格式；账户可用性以实际请求为准。</p></article>
-          <article class="card"><span class="tag">BROWSER</span><h3>一个桌面浏览器</h3><p>需要摄像头、麦克风权限，以及可用的中文语音识别和朗读。内嵌浏览器若不支持语音，请改用支持 Web Speech 的桌面浏览器。</p></article>
+          <article class="card"><span class="tag">AI SERVICE</span><h3>视觉与语音服务</h3><p>图片模型接收兼容 Chat Completions 格式的摄像头图片，豆包端到端实时语音负责听和说。两组服务密钥由本机基座保管。</p></article>
+          <article class="card"><span class="tag">BROWSER</span><h3>一个桌面浏览器</h3><p>需要摄像头、麦克风权限及 Web Audio、AudioWorklet、WebSocket 支持。可以使用桌面 Chrome 打开本机页面。</p></article>
         </div>
-        <div class="callout">这版声音链路是“浏览器听写 → AI 理解文字和图片 → 浏览器朗读”。因此，AI 服务需要<strong>视觉能力</strong>，不必同时提供原生语音通话接口。</div>
+        <div class="callout">浏览器采集麦克风并播放音频，后端连接豆包。桌面图片在后端分析后，通过 <code>observe_desktop</code> 工具提供给同一个实时语音会话。</div>
         <div class="table-wrap" style="margin-top:21px">
           <table><thead><tr><th>需要确认</th><th>你需要填写什么</th><th>放在哪里</th></tr></thead><tbody>
-            <tr><td>接口地址</td><td><code>https://api.deepseek.com/chat/completions</code></td><td>电脑项目的 <code>.env</code></td></tr>
-            <tr><td>模型名称</td><td><code>deepseek-flash</code></td><td>电脑项目的 <code>.env</code></td></tr>
+            <tr><td>接口地址</td><td><code>YATUAN_AI_ENDPOINT</code>，兼容图片输入的 Chat Completions 地址</td><td>电脑项目的 <code>.env</code></td></tr>
+            <tr><td>模型名称</td><td><code>YATUAN_AI_MODEL</code>，需已开通图片输入能力</td><td>电脑项目的 <code>.env</code></td></tr>
+            <tr><td>实时语音</td><td><code>VOLC_REALTIME_API_KEY</code>，豆包端到端实时语音密钥</td><td>电脑项目的 <code>.env</code></td></tr>
             <tr><td>API Key</td><td>已开通权限和额度的密钥</td><td>只填本机 <code>.env</code>，不要发到聊天或网页设置中</td></tr>
           </tbody></table>
         </div>
-        <p class="fine" style="margin-top:13px">以上模型与接口依据 <a href="https://api-docs.deepseek.com/guides/vision/" target="_blank" rel="noreferrer">DeepSeek 官方视觉文档</a>，于 2026 年 10 月 17 日核对。换服务商时可调整地址与模型名，但需确认视觉格式兼容；密钥始终由你在电脑上填写。</p>
+        <p class="fine" style="margin-top:13px">服务配置与设备协议见项目内 <code>docs/实时语音接入.md</code>。更换图片模型时，需验证实际图片请求及 JSON 观察结果。</p>
       </section>
 
       <section class="section" id="connect">
@@ -67,63 +68,64 @@
 
         <article class="step"><span class="step-number">1</span><h3>把投影设为“扩展显示器”</h3><p>投影仪连电脑，USB 摄像头也插电脑。系统显示设置选择“扩展”，电脑屏幕留作控制台，投影屏只显示黑底芽团。音频输出选电脑扬声器或你实际连接的音箱。</p><p>将摄像头固定在餐桌上方或斜上方，确认盘子在镜头内。<strong>拍的是物理餐盘，不是投影画面或网页截图。</strong> 尽量把芽团投在盘子旁边，避开摄像头主要观察区。</p></article>
 
-        <article class="step"><span class="step-number">2</span><h3>在本机填写 AI 配置</h3><p>在项目根目录创建或编辑 <code>.env</code>，与 <code>package.json</code> 放在同一层。使用 DeepSeek 时保留下面的接口和模型，只把最后一行替换成你的密钥：</p>
-          <pre><code>YATUAN_AI_ENDPOINT=https://api.deepseek.com/chat/completions
-YATUAN_AI_MODEL=deepseek-flash
-YATUAN_AI_KEY=在本机填写你的密钥</code></pre>
+        <article class="step"><span class="step-number">2</span><h3>在本机填写 AI 配置</h3><p>在项目根目录编辑 <code>.env</code>，保留已有的有效配置。当前项目使用以下模型地址，密钥由你在本机填写。</p>
+          <pre><code>YATUAN_AI_ENDPOINT=https://api.openai-next.com/v1/chat/completions
+YATUAN_AI_MODEL=deepseek-v4.1-flash
+YATUAN_AI_KEY=在本机填写图片模型密钥
+VOLC_REALTIME_API_KEY=在本机填写豆包实时语音密钥</code></pre>
           <p class="fine">密钥由本地代理服务保管。修改 <code>.env</code> 后，需停止并重新启动服务。不要把这个文件拖入聊天、上传到站点或提交到 Git。</p>
         </article>
 
-        <article class="step"><span class="step-number">3</span><h3>启动本地网页与代理</h3><p>安装好 Node.js 后，在终端进入项目目录，启动服务：</p>
-          <pre><code>cd bySide/yatuan-companion
-npm run dev</code></pre>
+        <article class="step"><span class="step-number">3</span><h3>启动本地基座</h3><p>在本项目根目录执行构建和启动命令。</p>
+          <pre><code>npm run build
+npm start</code></pre>
           <p>浏览器打开 <a href="http://127.0.0.1:4173">http://127.0.0.1:4173</a>。保持终端运行；停止服务会让后续 AI 请求无法完成。<code>.env</code> 不放在网页素材目录内。</p>
         </article>
 
-        <article class="step"><span class="step-number">4</span><h3>确认接口可用，再打开投影</h3><p>网页 AI 设置中的接口地址填 <code>/api/chat/completions</code>，模型可填 <code>deepseek-flash</code>。这是网页请求本机代理的地址，与 <code>.env</code> 里的 DeepSeek 地址用途不同。执行连接检查后，先发送一句普通聊天，再让芽团看一张实际餐盘照片，分别确认文字和图片请求都可用。</p><p>从控制台打开“桌面投影”，将这个窗口拖到投影屏，再进入全屏。两个窗口必须使用<strong>同一个浏览器、同一个地址来源</strong>；例如都从 <code>http://127.0.0.1:4173</code> 打开。</p>
+        <article class="step"><span class="step-number">4</span><h3>确认接口可用，再打开投影</h3><p>发送一句普通聊天，确认文字模型能回应。随后开始桌边陪伴，分别确认语音连接和桌面观察。模型地址和密钥统一在服务端配置。</p><p>从控制台打开投影，将窗口拖到投影屏，再进入全屏。AR 已连接摄像头时，陪伴面板会共享其画面。两个窗口使用<strong>同一个浏览器、同一个地址来源</strong>，例如 <code>http://127.0.0.1:4173</code>。</p>
           <div class="callout"><code>localhost</code> 和 <code>127.0.0.1</code> 不是同一个网页来源。不要一个窗口用前者、另一个用后者，也不要把本地控制台与已发布云端投影混用。</div>
         </article>
 
-        <article class="step"><span class="step-number">5</span><h3>在“桌边实时陪伴”中点击“开始陪伴”</h3><p>按浏览器提示允许麦克风与摄像头，选择外接 USB 摄像头。开始时会短暂请求摄像头授权后关闭，唤醒后才重新开启、采集和发送图片。唤醒后在预览中检查方向和餐盘位置；麦克风使用浏览器默认输入设备，可在系统设置中调整。</p><p>只在投影页启动这一轮声音与视觉会话。控制台负责查看状态和配置，避免另一个页面同时采集、朗读，导致重复回答。</p></article>
+        <article class="step"><span class="step-number">5</span><h3>打开“桌边实时陪伴”</h3><p>打开“开始陪伴”，按浏览器提示允许麦克风与摄像头。首次连接使用系统默认摄像头，可结束陪伴后选择其他设备再开始。AR 已开启时，面板显示共享的最近采样画面。</p><p>在控制台或投影页选择一个窗口发起语音，其他窗口通过基座同步气泡与状态。麦克风由当前会话独占。</p></article>
 
-        <article class="step"><span class="step-number">6</span><h3>说“芽团芽团”，开始真实陪伴</h3><p>等界面进入等待唤醒状态，清楚地说出唤醒词，再说想聊的话，例如：“芽团芽团，看看我今天吃了什么？” 芽团会开始观察、请求 AI，并将回应、动作和状态同步到投影与控制台。</p><p class="fine">第一次启动必须点击页面并授权。网页关闭、电脑休眠、麦克风权限被撤销后，语音唤醒不会在后台继续工作。</p></article>
+        <article class="step"><span class="step-number">6</span><h3>直接和芽团说话</h3><p>连接后直接问“芽团，看看我今天吃了什么”。芽团会按问题请求当前桌面画面，结合视觉结果回答。也可以说“暂停观察”“继续观察”“结束陪伴”。</p><p class="fine">浏览器模式需要保持采集页面运行。外部音频设备可按 <code>docs/音频设备接入.md</code> 接入基座。</p></article>
       </section>
 
       <section class="section" id="voice">
         <div class="section-head"><span class="section-no">03</span><h2>之后，就用声音找它</h2></div>
         <div class="grid two">
-          <article class="card green"><h3>先唤醒，再交流</h3><div class="phrase">“芽团芽团”</div><p>唤醒后可以聊心情、说偏好，或问盘子里的食物。识别到的文字和芽团的回答会显示出来，方便现场确认它有没有听对。</p></article>
-          <article class="card"><h3>唤醒没有响应时</h3><p>点击“唤醒芽团”，或输入文字继续交流。检查麦克风权限、系统输入音量和语音识别支持；中文听写可能依赖浏览器供应商的联网服务。</p></article>
+          <article class="card green"><h3>连接后即可交流</h3><div class="phrase">“芽团，桌上有什么？”</div><p>可以聊心情、说偏好，或问盘子里的食物。识别到的文字和芽团的回答会显示出来。</p></article>
+          <article class="card"><h3>没有听到回答时</h3><p>检查麦克风输入、扬声器输出及面板错误。豆包会话需要有效密钥与服务授权，可结束陪伴后重试。</p></article>
         </div>
         <div class="flow" aria-label="声音交互流程">
-          <div><small>01</small><b>听见唤醒词</b><span>已开启的网页接收听写结果</span></div>
+          <div><small>01</small><b>听你说话</b><span>麦克风音频经基座发送至豆包</span></div>
           <div><small>02</small><b>理解你的话</b><span>识别成文字，结合记忆</span></div>
           <div><small>03</small><b>看看餐盘</b><span>需要时附上一张摄像头画面</span></div>
           <div><small>04</small><b>AI 给出回应</b><span>更新气泡、情绪与状态</span></div>
           <div><small>05</small><b>开口回答</b><span>朗读结束后继续听你说</span></div>
         </div>
-        <p class="fine">为避免芽团把自己的声音当成你的话，朗读时会暂停听写，结束后再恢复。这一版没有“边说边被你打断”的全双工通话能力，也不是独立、离线常驻的唤醒词引擎。</p>
+        <p class="fine">默认在芽团播放时发送静音，减少外放回声。戴耳机时可开启“耳机模式（可打断）”，说话会打断当前回答。</p>
       </section>
 
       <section class="section" id="camera">
         <div class="section-head"><span class="section-no">04</span><h2>观察餐盘，回应有变化的日常</h2></div>
-        <p class="section-intro">摄像头开启后，预览是连续的；发给 AI 的是一张张定时快照，不是连续视频。</p>
+        <p class="section-intro">本机摄像头提供实时预览，AI 接收定时采样的图片。共享 AR 摄像头时，面板显示最近一次采样。</p>
         <div class="grid three">
-          <article class="card"><span class="tag">INTERVAL</span><h3>间隔 5 / 10 / 15 秒再看</h3><p>默认 10 秒，可自行调整。上一轮请求和朗读都结束后，再等待这个间隔拍下一张；并非固定帧率，也不保证每 10 秒就有一次回复。</p></article>
+          <article class="card"><span class="tag">INTERVAL</span><h3>间隔 5 / 10 / 15 秒再看</h3><p>默认 10 秒。图片分析与语音并行，主动问当前画面时会按需请求新图片。可结束陪伴后调整间隔。</p></article>
           <article class="card"><span class="tag">ONE AT A TIME</span><h3>图片请求按顺序处理</h3><p>上一轮没结束时不堆积图片。观察开启期间，即使画面相同也仍会定时发送快照；较短间隔会增加请求量和服务费用。</p></article>
-          <article class="card"><span class="tag">GENTLE FEEDBACK</span><h3>有新发现再开口</h3><p>模型判断没有需要说的新变化时保持安静；相同回复不重复播报，自动播报至少间隔 18 秒。主动提问会得到回应。</p></article>
+          <article class="card"><span class="tag">CONTEXT</span><h3>带着观察结果交流</h3><p>后台观察更新桌面上下文及页面说明，语音回答按对话进行。画面不可用时，芽团会说明需要检查摄像头。</p></article>
         </div>
         <div class="table-wrap" style="margin-top:21px">
           <table><thead><tr><th>你执行的操作</th><th>之后会发生什么</th></tr></thead><tbody>
-            <tr><td>开始陪伴</td><td>启动所需权限与语音会话，等待唤醒后进入观察。</td></tr>
-            <tr><td>暂停观察</td><td>停止定时拍摄并释放摄像头；文字聊天仍可使用。</td></tr>
+            <tr><td>开始陪伴</td><td>连接豆包实时语音并开始桌面采样。</td></tr>
+            <tr><td>暂停观察</td><td>停止采样并清除图片缓存，语音继续。共享的 AR 摄像头由 AR 窗口控制。</td></tr>
             <tr><td>继续观察</td><td>重新开启摄像头，恢复观察流程；权限变化时可能再次提示。</td></tr>
             <tr><td>结束陪伴</td><td>停止摄像头、麦克风听写、语音播放与当前会话请求。</td></tr>
           </tbody></table>
         </div>
         <div class="callout warm">食物照片可以辅助描述看得见的食材和搭配，但不能可靠确定油盐量、过敏原、精确热量或诊断健康问题。芽团会保留不确定性；你可以直接告诉它“这不是鸡肉，是豆腐”来纠正。</div>
-        <p class="fine" style="margin-top:16px">观察期间的快照会经本地代理发给你配置的 AI 服务；语音听写可能由浏览器供应商处理。点击“结束陪伴”后停止本次采集。成长是陪伴反馈，不是医学评分：有效餐盘观察最多每 20 分钟增加 3 点成长、2 点活力；主动对话最多每分钟增加 1 点成长、1 点亲密，不会每帧刷成长。</p>
-        <div class="callout">连续 3 次 AI 请求或结果格式错误会暂停采集。语音识别启动超时或连续失败时，会显示具体原因并暂停正在进行的自动采集。按钮和文字仍然可用；点击“唤醒芽团”可手动恢复观察。要恢复语音，请检查 Chrome 的麦克风权限、系统输入设备和网络，然后结束陪伴并重新开始。DeepSeek 文字连接成功不代表浏览器语音服务已连接。</div>
+        <p class="fine" style="margin-top:16px">采样图片发送至已配置的视觉模型，音频发送至豆包。图片在当前会话内存中使用。聊天、记忆和成长由基座持久化，聊天成长遵循每分钟最多一次的规则。</p>
+        <div class="callout">图片分析失败会显示观察错误，语音继续工作。摄像头断开时会暂停观察，处理后点击“继续观察”。实时语音断开会释放本轮采集资源，可检查配置与网络后重新开始。</div>
       </section>
 
       <section class="section" id="verify">
@@ -133,7 +135,7 @@ npm run dev</code></pre>
           <ul class="checklist">
             <li><strong>连通：</strong>AI 连接检查通过；发送“你好，芽团”，收到该服务的真实回复。</li>
             <li><strong>看得见：</strong>预览里能看到 USB 摄像头拍到的真实餐盘；让芽团描述食物，再核对是否准确。</li>
-            <li><strong>听得见：</strong>说“芽团芽团”，唤醒状态有变化；再说一句话，屏幕显示正确的听写文字。</li>
+            <li><strong>听得见：</strong>连接成功后说一句话，屏幕显示正确的转写文字。</li>
             <li><strong>说得出：</strong>芽团有声音回复；播放自己的声音时没有再次触发一轮自问自答。</li>
             <li><strong>能回应变化：</strong>移动或更换一道可见食物，等待下一轮有效采样；观察是否给出新的、有依据的反馈。</li>
             <li><strong>能同步：</strong>电脑控制台和黑底投影同时更新气泡与角色状态；成长变化来自实际保存的互动结果。</li>
@@ -170,10 +172,10 @@ npm run dev</code></pre>
         <article class="faq" style="border-top:0;padding-top:0;margin-top:0"><h3>原来那个在线网址，能不能直接用？</h3><p>在线页面是静态站点。要从它调用真实 AI，需要你可用的 HTTPS 代理服务；本机 <code>.env</code> 只供本地 Node 服务使用，不会自动连到线上网页。这次电脑接投影的场景，直接让控制台和投影都运行在本机地址即可。</p></article>
         <article class="faq"><h3>手机能不能同时控制电脑投影？</h3><p>当前实时同步适用于同一电脑、同一浏览器、同一来源的多个窗口。手机和电脑是两台设备，尚未接跨设备同步服务；手机版界面仍可使用，但不能因此认定手机已经与电脑投影实时互联。</p></article>
         <article class="faq"><h3>摄像头列表里没有外接设备，或者拍到的是电脑前置？</h3><p>先接好 USB 摄像头，检查系统和浏览器摄像头权限，关掉正在独占摄像头的会议应用，再重新进入选择。第一次授权前，设备名称可能不可见。以预览中的实际画面为准。</p></article>
-        <article class="faq"><h3>麦克风有权限，但说话没反应？</h3><p>检查系统默认输入设备和麦克风电平；确认页面仍开着且已经点过“开始陪伴”。如果浏览器不支持中文听写，或供应商语音服务无法连接，使用手动唤醒和文字输入，先单独验证视觉链路。</p></article>
+        <article class="faq"><h3>麦克风有权限，但说话没反应？</h3><p>检查系统默认输入设备和麦克风电平，确认豆包实时语音连接成功。面板会显示网络、授权或设备错误。处理后结束陪伴并重试。</p></article>
         <article class="faq"><h3>能聊天，但图片请求失败？</h3><p>检查模型是否真的支持图片输入，接口是否接受 Chat Completions 的 <code>image_url</code> 内容项，账户是否有对应模型权限。接口地址、密钥错误、余额不足和网络超时需要分别根据错误提示处理。</p></article>
         <article class="faq"><h3>投影没同步，或者同一句话被说了两遍？</h3><p>确认两个窗口地址都以 <code>http://127.0.0.1:4173</code> 开头，且属于同一个浏览器的普通窗口。结束多余页面的陪伴会话，只保留投影页采集与朗读。浏览器隐私窗口不与普通窗口共享同一份状态。</p></article>
-        <article class="faq"><h3>芽团看错了食物，或者很久没有新建议？</h3><p>先检查取景、光线、遮挡和画面变化。系统会避免重复播报，但不会因此停止发送观察快照；你可以直接问“再帮我看看”，或口头纠正食材。也请检查是否已因连续错误而暂停。模型仍可能认错，不能把画面推断当成精确检测。</p></article>
+        <article class="faq"><h3>芽团看错了食物，或者没有新观察？</h3><p>检查取景、光线、遮挡以及面板中的最近观察时间，可以问“再帮我看看”请求新画面，也可以口头纠正食材。观察已暂停时，点击“继续观察”。</p></article>
       </section>
 
       <section class="section" style="padding-top:28px;padding-bottom:28px">

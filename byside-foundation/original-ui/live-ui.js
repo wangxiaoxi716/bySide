@@ -26,7 +26,7 @@ export function mountLiveUI({ beforeStart = () => {}, onActive = () => {} } = {}
   document.body.append(panel);
   const $ = selector => panel.querySelector(selector);
   const video = $('#live-camera');
-  let checking = false, testAbort = null, wasActive = false;
+  let checking = false, testAbort = null, wasActive = false, lifecycle = 0;
   const modeNames = { idle: '尚未开始', starting: '准备中', listening: '正在听你说话', observing: '语音与桌面观察已连接', thinking: '正在思考', speaking: '正在回应', paused: '语音已连接 · 观察已暂停', stopping: '正在结束', error: '需要处理' };
   function showError(message) { $('#live-error').textContent = message || ''; }
   async function refreshCameras() {
@@ -87,10 +87,12 @@ export function mountLiveUI({ beforeStart = () => {}, onActive = () => {} } = {}
     const wakePhrase = $('#live-wake').value.trim();
     if (wakePhrase.replace(/\s/g, '').length < 2) throw new Error('唤醒词至少需要两个字。');
     saveLiveConfig({ cameraId: $('#live-camera-select').value, intervalSeconds: Number($('#live-interval').value), wakePhrase });
+    const token = ++lifecycle;
     checking = true;
     try {
       await beforeStart();
       const health = await discoverLocalAI();
+      if (token !== lifecycle || !panel.open) return;
       if(health?.mode !== 'model') throw new Error('AI 服务尚未配置：请由站点管理员配置服务端密钥。本机运行时可在 .env 中填写后重启服务。');
       await controller.start(video, { fullDuplex: $('#live-duplex').checked });
       await refreshCameras();
@@ -125,11 +127,11 @@ export function mountLiveUI({ beforeStart = () => {}, onActive = () => {} } = {}
     void controller.handleText(text).catch(error => showError(error.message));
   });
   panel.addEventListener('click', event => { if (event.target === panel) panel.close(); });
-  panel.addEventListener('close', () => { testAbort?.abort(); if (controller.getStatus().active) controller.stop(); });
+  panel.addEventListener('close', () => { lifecycle++; testAbort?.abort(); void controller.stop(); });
   $('#live-camera-select').addEventListener('change', () => {
     saveLiveConfig({ cameraId: $('#live-camera-select').value });
   });
-  addEventListener('pagehide', () => { testAbort?.abort(); controller.destroy(); navigator.mediaDevices?.removeEventListener('devicechange', refreshCameras); });
+  addEventListener('pagehide', () => { lifecycle++; testAbort?.abort(); controller.destroy(); navigator.mediaDevices?.removeEventListener('devicechange', refreshCameras); });
   navigator.mediaDevices?.addEventListener('devicechange', refreshCameras);
   loadFields();
   return { controller, async open() { await loadFields(); if (!panel.open) panel.showModal(); startSession().catch(err => showError(err.message)); } };
