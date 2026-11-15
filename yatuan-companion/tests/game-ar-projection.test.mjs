@@ -149,6 +149,27 @@ test('projection follows the rolling die and each intermediate Monopoly tile bef
   assert.match(invalid, /data-position="0"[^>]*>.*?gar-token token-0/);
 });
 
+test('projection marks purchased property with its owner portrait, including both opponent modes', () => {
+  const game = createMonopoly('local');
+  game.owners[1] = 0;
+  game.owners[3] = 1;
+  const render = () => renderGameProjection({ game: 'monopoly', snapshot: { kind: 'monopoly', game }, connected: true });
+  const tile = (html, position) => html.match(new RegExp(`<div class="gar-town-tile[^"]*" data-position="${position}"[^>]*>(.*?)<div class="gar-tokens">`))?.[1] || '';
+
+  let html = render();
+  assert.match(tile(html, 1), /gar-owner-badge owner-0.*avatars\/player\.jpg/);
+  assert.match(tile(html, 3), /gar-owner-badge owner-1.*avatars\/partner\.jpg/);
+  assert.doesNotMatch(tile(html, 5), /gar-owner-badge/);
+  assert.match(html, /蘑菇小站由你拥有/);
+  assert.match(html, /小叶面包房由伙伴拥有/);
+
+  game.mode = 'solo';
+  game.players[1].name = '芽团';
+  html = render();
+  assert.match(tile(html, 3), /gar-owner-badge owner-1.*avatars\/yatuan\.jpg/);
+  assert.match(html, /小叶面包房由芽团拥有/);
+});
+
 test('selection is constrained and an existing projection is switched without navigation', () => {
   assert.equal(validGameSelection({ game: 'chess', room: '../other' }), false);
   assert.equal(validGameSelection({ game: 'other', room: 'room' }), false);

@@ -1,6 +1,6 @@
 import { esc } from './stage.js';
 import { BOARD, MAX_ROUNDS, createGame as createMonopolyGame } from './monopoly-core.js';
-import { TILE_ART, DICE_ART, monopolyAvatar } from './monopoly-assets.js';
+import { TILE_ART, DICE_ART, monopolyAvatar, monopolyOwnerBadge } from './monopoly-assets.js';
 import { BOARD_POSITIONS, validRollPresentation, stepOrigin } from './monopoly-animation.js';
 
 const titles = { chess: '五子棋', 'tic-tac-toe': '井字棋', monopoly: '芽团大富翁' };
@@ -60,11 +60,15 @@ function monopolyBoard(game, presentation) {
       return `<b class="gar-token token-${number}${stepping && number === game.turn ? ' is-stepping' : ''}"${stepping && number === game.turn ? ` style="--step-from-x:${origin.x};--step-from-y:${origin.y}"` : ''}>${avatar ? `<img src="${avatar}" alt="">` : '2'}</b>`;
     }).join('');
     const [row, column] = BOARD_POSITIONS[index];
-    return `<div class="gar-town-tile${owner === 0 || owner === 1 ? ` owner-${owner}` : ''}${stepping ? ' is-travelling' : ''}" data-position="${index}" style="grid-row:${row};grid-column:${column}"><img src="${TILE_ART[index]}" alt=""><span>${esc(tile.name)}</span><div class="gar-tokens">${occupants}</div></div>`;
+    return `<div class="gar-town-tile${owner === 0 || owner === 1 ? ` owner-${owner}` : ''}${stepping ? ' is-travelling' : ''}" data-position="${index}" style="grid-row:${row};grid-column:${column}"><img src="${TILE_ART[index]}" alt=""><span class="gar-tile-name">${esc(tile.name)}</span>${monopolyOwnerBadge(game.mode, owner, true)}<div class="gar-tokens">${occupants}</div></div>`;
   }).join('');
   const face = presentation?.dice ?? game.dice;
   const dice = Number.isInteger(face) && face >= 1 && face <= 6 ? `<img src="${DICE_ART[face - 1]}" alt="${face} 点">` : '<span>✦</span>';
-  return `<div class="gar-town" role="img" aria-label="同步的大富翁棋盘"><div class="gar-town-center"><small>THE LITTLE TOWN</small><strong>芽团大富翁</strong><div class="gar-die${presentation?.phase === 'rolling' ? ' is-rolling' : ''}">${dice}</div><span>第 ${esc(game.round)} / ${MAX_ROUNDS} 轮</span></div>${places}</div>`;
+  const ownership = BOARD.map((tile, index) => {
+    const owner = game.owners[index];
+    return owner === 0 || owner === 1 ? `${tile.name}由${game.players[owner].name}拥有` : '';
+  }).filter(Boolean).join('，');
+  return `<div class="gar-town" role="img" aria-label="${esc(`同步的大富翁棋盘${ownership ? `，${ownership}` : ''}`)}"><div class="gar-town-center"><small>THE LITTLE TOWN</small><strong>芽团大富翁</strong><div class="gar-die${presentation?.phase === 'rolling' ? ' is-rolling' : ''}">${dice}</div><span>第 ${esc(game.round)} / ${MAX_ROUNDS} 轮</span></div>${places}</div>`;
 }
 
 function chessView(kind, snapshot) {

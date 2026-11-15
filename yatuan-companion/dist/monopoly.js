@@ -1,5 +1,5 @@
 import { BOARD, EVENT_CARDS, MAX_ROUNDS, PASS_BONUS, START_BALANCE, createGame, scorePlayers, rollDice, decideProperty, acknowledgeEvent, endTurn, shouldBotBuy } from './monopoly-core.js';
-import { TILE_ART, DICE_ART, monopolyAvatar } from './monopoly-assets.js';
+import { TILE_ART, DICE_ART, monopolyAvatar, monopolyOwnerBadge } from './monopoly-assets.js';
 import { BOARD_POSITIONS, buildRollFrames, stepOrigin } from './monopoly-animation.js';
 import { icon, esc } from './stage.js';
 import { createChessSession } from './chess-session.js';
@@ -40,6 +40,8 @@ function avatarContent(playerIndex) {
 function renderBoard() {
   tileElements.forEach((element, index) => {
     const tile = BOARD[index], owner = game.owners[index];
+    if (owner === 0 || owner === 1) element.dataset.owner = owner;
+    else delete element.dataset.owner;
     const playersHere = game.players.map((player, playerIndex) => (presentation?.positions[playerIndex] ?? player.position) === index ? playerIndex : null).filter(value => value !== null);
     const stepping = presentation?.phase === 'moving' && presentation.positions[game.turn] === index;
     element.classList.toggle('is-travelling', Boolean(stepping));
@@ -48,7 +50,7 @@ function renderBoard() {
     const detail = tile.type === 'property' ? `${tile.price} · 租 ${tile.rent}` : tile.detail || (tile.type === 'event' ? '抽取事件卡' : '');
     const playersText = playersHere.map(playerIndex => game.players[playerIndex].name).join('、');
     element.setAttribute('aria-label', `${tile.name}，${detail}${ownerText ? `，${ownerText}` : ''}${playersText ? `，${playersText}在这里` : ''}`);
-    element.innerHTML = `<img class="mono-tile-image" src="${TILE_ART[index]}" alt="" width="360" height="360"><div class="mono-tile-info"><strong>${esc(tile.name)}</strong><small>${esc(detail)}</small></div>${owner === null ? '' : `<span class="mono-owner owner-${owner}">${esc(game.players[owner].name)}的</span>`}<div class="mono-tokens" aria-hidden="true">${playersHere.map(playerIndex => `<span class="mono-token token-${playerIndex}${stepping && playerIndex === game.turn ? ' is-stepping' : ''}"${stepping && playerIndex === game.turn ? ` style="--step-from-x:${origin.x};--step-from-y:${origin.y}"` : ''}>${avatarContent(playerIndex)}</span>`).join('')}</div>`;
+    element.innerHTML = `<img class="mono-tile-image" src="${TILE_ART[index]}" alt="" width="360" height="360"><div class="mono-tile-info"><strong>${esc(tile.name)}</strong><small>${esc(detail)}</small></div>${monopolyOwnerBadge(game.mode, owner)}<div class="mono-tokens" aria-hidden="true">${playersHere.map(playerIndex => `<span class="mono-token token-${playerIndex}${stepping && playerIndex === game.turn ? ' is-stepping' : ''}"${stepping && playerIndex === game.turn ? ` style="--step-from-x:${origin.x};--step-from-y:${origin.y}"` : ''}>${avatarContent(playerIndex)}</span>`).join('')}</div>`;
   });
 }
 

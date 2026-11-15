@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { TILE_ART, DICE_ART, PLAYER_AVATARS, monopolyAvatar } from '../original-ui/monopoly-assets.js';
+import { TILE_ART, DICE_ART, PLAYER_AVATARS, monopolyAvatar, monopolyOwnerBadge } from '../original-ui/monopoly-assets.js';
 import {
   BOARD, EVENT_CARDS, MAX_ROUNDS, PASS_BONUS, START_BALANCE,
   createGame, scorePlayers, rollDice, decideProperty, acknowledgeEvent, endTurn, shouldBotBuy,
@@ -195,4 +195,12 @@ test('player and Yatuan portraits load and preserve the identity of a local huma
     assert.ok(bytes.length > 1000, `${path} is missing or incomplete`);
     assert.deepEqual([...bytes.subarray(0, 2)], [0xff, 0xd8], `${path} must be a JPEG`);
   }
+});
+
+test('owner badges use the appropriate portrait and never appear for an unowned space', () => {
+  assert.match(monopolyOwnerBadge('local', 0), /mono-owner-badge owner-0.*avatars\/player\.jpg/);
+  assert.match(monopolyOwnerBadge('local', 1), /mono-owner-badge owner-1.*avatars\/partner\.jpg/);
+  assert.match(monopolyOwnerBadge('solo', 1, true), /gar-owner-badge owner-1.*avatars\/yatuan\.jpg/);
+  assert.equal(monopolyOwnerBadge('local', null), '');
+  assert.equal(monopolyOwnerBadge('local', undefined), '');
 });
