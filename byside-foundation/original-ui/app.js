@@ -338,7 +338,13 @@ async function action(name, el) {
             let url;
             if (view === 'chess') {
                 try {
-                    url = document.querySelector('.chess-embed iframe')?.contentDocument?.getElementById('projection-open')?.href;
+                    const gameDocument = document.querySelector('.chess-embed iframe')?.contentDocument;
+                    const gameProjection = gameDocument?.getElementById('game-ar-open');
+                    if (gameProjection) {
+                        gameProjection.click();
+                        break;
+                    }
+                    url = gameDocument?.getElementById('projection-open')?.href;
                 } catch (e) {
                 }
             }

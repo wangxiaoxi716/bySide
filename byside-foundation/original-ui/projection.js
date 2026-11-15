@@ -5,6 +5,8 @@ import { characterArt, miniStats } from './stage.js';
 import { getMotionAsset } from './animations.js';
 import { getDemoCharacterState, subscribeDemo } from './demo.js';
 import { mountCameraOverlay } from './camera-overlay.mjs';
+import { GAME_AR_MESSAGE, GAME_AR_WINDOW, createGameProjectionController, validGameSelection } from './game-ar-control.js';
+import { renderGameProjection } from './game-ar-view.js';
 
 const root = document.querySelector('#projection-root');
 const SCENE_WIDTH = 510;
@@ -66,8 +68,39 @@ document.querySelector('#projection-fullscreen').onclick = async () => {
 
 const liveUI=mountLiveUI();
 overlay=mountCameraOverlay({root,liveUI,restoreProjection:()=>render(getState())});
+window.name = GAME_AR_WINDOW;
+const gameHost = document.createElement('div');
+gameHost.className = 'gar-root';
+gameHost.hidden = true;
+root.append(gameHost);
+const companionButton = document.querySelector('#projection-companion');
+let gameRenderKey = '';
+const gameProjection = createGameProjectionController({ onUpdate(view) {
+  root.querySelector('.projection-scene').hidden = Boolean(view);
+  gameHost.hidden = !view;
+  companionButton.hidden = !view;
+  if (view) {
+    const key = JSON.stringify(view);
+    if (key !== gameRenderKey) gameHost.innerHTML = renderGameProjection(view);
+    gameRenderKey = key;
+  } else {
+    gameHost.replaceChildren();
+    gameRenderKey = '';
+  }
+  overlay.render();
+} });
+companionButton.addEventListener('click', () => gameProjection.clear());
+window.addEventListener('message', event => {
+  if (event.origin !== location.origin || event.data?.type !== GAME_AR_MESSAGE || !validGameSelection(event.data)) return;
+  gameProjection.select(event.data);
+  if (!overlay.isActive()) overlay.open(false);
+});
+document.documentElement.dataset.gameArReady = '1';
+window.addEventListener('pagehide', () => gameProjection.clear(), { once: true });
 const launchUrl=new URL(location.href);
 const autoConnect=launchUrl.searchParams.get('ar')==='1';
+const initialGame = { game: launchUrl.searchParams.get('game'), room: launchUrl.searchParams.get('room') };
+if (validGameSelection(initialGame)) gameProjection.select(initialGame);
 if(autoConnect){launchUrl.searchParams.delete('ar');history.replaceState(history.state,'',launchUrl.href);}
 overlay.open(autoConnect);
 document.querySelector('#projection-live').onclick=()=>liveUI.open();
