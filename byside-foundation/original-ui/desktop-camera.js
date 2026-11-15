@@ -66,12 +66,13 @@ export function createDesktopCamera(overrides = {}) {
     video = undefined; shared = false; releaseLock?.(); releaseLock = undefined;
   }
   return {
-    async start(element, selectedId = '') {
+    async start(element, selectedId = '', { sharedOnly = false } = {}) {
       stop(); const token = generation; video = element; cameraId = selectedId;
       abort = new AbortController();
       const frame = await io.sharedFrame(cameraId, abort.signal);
       if (token !== generation) throw new Error('摄像头连接已取消');
       if (frame) { shared = true; return frame; }
+      if (sharedOnly) throw new Error('尚未连接 AR 摄像头，请连接后继续观察。');
       if (io.locks?.request) {
         const acquired = await new Promise((resolve, reject) => {
           io.locks.request('yatuan-live-devices', { ifAvailable: true }, async lock => {

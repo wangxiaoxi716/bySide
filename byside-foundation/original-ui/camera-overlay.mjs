@@ -82,6 +82,7 @@ export function mountCameraOverlay({root, liveUI, restoreProjection}){
       if(token!==gen){next.getTracks().forEach(t=>t.stop());return;}
       stream=next;bg.srcObject=next;await Promise.race([bg.play(),new Promise((_,reject)=>{timeout=setTimeout(()=>reject(new Error('预览加载超时，请重新连接摄像头。')),15000);})]);clearTimeout(timeout);if(token!==gen)return;
       stopSharingCamera = publishDesktopCamera(bg, 'AR 摄像头');
+      window.dispatchEvent(new Event('yatuan:ar-camera-ready'));
       const track=next.getVideoTracks()[0];track.addEventListener('mute',()=>{if(stream===next){stopTracking();message('摄像头画面暂停，请检查 iPhone 锁屏和连接状态。');}});track.addEventListener('unmute',()=>{if(stream===next&&!tracking){message('摄像头画面已恢复，请重新圈定桌面。');}});track.addEventListener('ended',()=>{if(stream===next){stopCamera();message('摄像头已断开，请检查 iPhone 并重新连接。');}}, {once:true});
       const actual=track.getSettings().deviceId||select.value;const list=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');const matched=list.find(d=>d.deviceId===actual);preferred={id:actual,label:matched?.label||track.label||''};save(PREF,preferred);await devices();
       message('摄像头已连接，正在加载桌面追踪组件…');await loadCv();if(token!==gen)return;
@@ -127,7 +128,7 @@ export function mountCameraOverlay({root, liveUI, restoreProjection}){
   $('#ar-reset').onclick=()=>{position={x:0,y:0,scale:1};sizing.value=position.scale;savePosition();render();};
   $('#ar-refresh').onclick=devices;
   $('#ar-authorize').onclick=async()=>{
-    if(stream||starting||liveUI.controller.getStatus().active){message('请先结束当前摄像头或桌边陪伴，再识别设备。');return;}
+    if(stream||starting||liveUI.controller.getStatus().observing){message('请先结束当前摄像头观察，再识别设备。');return;}
     let temporary=null;
     try{message('正在请求摄像头权限以识别设备…');temporary=await navigator.mediaDevices.getUserMedia({video:true,audio:false});temporary.getTracks().forEach(t=>t.stop());temporary=null;await devices();message('设备已刷新，请选择 iPhone 后连接。');}
     catch(e){message(e?.name==='NotAllowedError'?'摄像头权限被拒绝，请在浏览器允许后重试。':'暂时无法识别摄像头，请检查设备连接。');}

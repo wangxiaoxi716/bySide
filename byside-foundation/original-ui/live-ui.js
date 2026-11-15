@@ -26,7 +26,7 @@ export function mountLiveUI({ beforeStart = () => {}, onActive = () => {} } = {}
   document.body.append(panel);
   const $ = selector => panel.querySelector(selector);
   const video = $('#live-camera');
-  let checking = false, testAbort = null, wasActive = false, lifecycle = 0;
+  let checking = false, testAbort = null, directAbort = null, wasActive = false, lifecycle = 0;
   const modeNames = { idle: '尚未开始', starting: '准备中', listening: '正在听你说话', observing: '语音与桌面观察已连接', thinking: '正在思考', speaking: '正在回应', paused: '语音已连接 · 观察已暂停', stopping: '正在结束', error: '需要处理' };
   function showError(message) { $('#live-error').textContent = message || ''; }
   async function refreshCameras() {
@@ -71,6 +71,7 @@ export function mountLiveUI({ beforeStart = () => {}, onActive = () => {} } = {}
     $('[data-live="start"]').disabled = status.active;
     $('[data-live="pause"]').textContent = status.observing ? '暂停观察' : '继续观察';
     panel.querySelectorAll('[data-live="pause"],[data-live="stop"]').forEach(el => { el.disabled = !status.active || (status.mode === 'starting' && el.dataset.live !== 'stop'); });
+    if (!status.visionEnabled) $('[data-live="pause"]').disabled = true;
     for (const el of panel.querySelectorAll('.live-fields input,.live-fields select,[data-live="test-ai"],#live-endpoint,#live-model')) el.disabled = status.active;
     document.body.classList.toggle('live-running', status.active);
     const badge = document.querySelector('#projection-live-status');
@@ -98,6 +99,39 @@ export function mountLiveUI({ beforeStart = () => {}, onActive = () => {} } = {}
       await refreshCameras();
     } finally { checking = false; }
   }
+  async function startDirect() {
+    if (checking || controller.getStatus().active) return false;
+    const token = ++lifecycle, abort = new AbortController();
+    directAbort = abort; checking = true;
+    try {
+      await beforeStart();
+      if (token !== lifecycle) return false;
+      let response;
+      try {
+        response = await fetch('/api/v1/health', { cache: 'no-store', signal: AbortSignal.any([abort.signal, AbortSignal.timeout(5000)]) });
+      } catch (error) {
+        if (error.name === 'AbortError') throw error;
+        throw new Error(error.name === 'TimeoutError' ? '连接本机陪伴服务超时。' : '无法连接本机陪伴服务。');
+      }
+      if (!response.ok) throw new Error('无法连接本机陪伴服务。');
+      const health = await response.json().catch(() => { throw new Error('本机陪伴服务返回的数据无效。'); });
+      if (token !== lifecycle) return false;
+      directAbort = null; checking = false;
+      return await controller.start(video, {
+        fullDuplex: $('#live-duplex').checked,
+        cameraId: '',
+        sharedCameraOnly: true,
+        desktopVision: health.mode === 'model',
+      });
+    } finally {
+      if (directAbort === abort) { directAbort = null; checking = false; }
+    }
+  }
+  function stopDirect() {
+    lifecycle++;
+    if (directAbort) { directAbort.abort(); directAbort = null; checking = false; }
+    return controller.stop();
+  }
   panel.addEventListener('click', async event => {
     const action = event.target.closest('[data-live]')?.dataset.live;
     if (!action) return;
@@ -115,7 +149,7 @@ export function mountLiveUI({ beforeStart = () => {}, onActive = () => {} } = {}
         $('#live-ai-result').textContent = `文字连接已响应，${reply.slice(0, 100)}。开始陪伴后可以确认桌面识别结果。`;
       }
     } catch (error) { if (error.name !== 'AbortError') showError(error.message); }
-    finally { checking = false; $('[data-live="test-ai"]').disabled = controller.getStatus().active; }
+    finally { $('[data-live="test-ai"]').disabled = controller.getStatus().active; }
   });
   panel.querySelector('.live-chat').addEventListener('submit', event => {
     event.preventDefault();
@@ -127,12 +161,12 @@ export function mountLiveUI({ beforeStart = () => {}, onActive = () => {} } = {}
     void controller.handleText(text).catch(error => showError(error.message));
   });
   panel.addEventListener('click', event => { if (event.target === panel) panel.close(); });
-  panel.addEventListener('close', () => { lifecycle++; testAbort?.abort(); void controller.stop(); });
+  panel.addEventListener('close', () => { testAbort?.abort(); void stopDirect(); });
   $('#live-camera-select').addEventListener('change', () => {
     saveLiveConfig({ cameraId: $('#live-camera-select').value });
   });
-  addEventListener('pagehide', () => { lifecycle++; testAbort?.abort(); controller.destroy(); navigator.mediaDevices?.removeEventListener('devicechange', refreshCameras); });
+  addEventListener('pagehide', () => { lifecycle++; directAbort?.abort(); testAbort?.abort(); controller.destroy(); navigator.mediaDevices?.removeEventListener('devicechange', refreshCameras); });
   navigator.mediaDevices?.addEventListener('devicechange', refreshCameras);
   loadFields();
-  return { controller, async open() { await loadFields(); if (!panel.open) panel.showModal(); startSession().catch(err => showError(err.message)); } };
+  return { controller, startDirect, stopDirect, async open() { await loadFields(); if (!panel.open) panel.showModal(); startSession().catch(err => showError(err.message)); } };
 }
