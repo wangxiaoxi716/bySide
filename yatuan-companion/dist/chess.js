@@ -3,6 +3,7 @@ import { createChessSession } from './chess-session.js';
 import { mountChessVision } from './chess-vision-ui.js';
 import { updateProjectionBinding } from './chess-projection-geometry.js';
 import { characterArt, icon, esc } from './stage.js';
+import { installGameProjectionLink } from './game-ar-control.js';
 
 // This optional room owns only its chess session. It never changes the original
 // companion's chat, growth, memories, camera, microphone, or stored preferences.
@@ -30,6 +31,7 @@ const session = createChessSession({ roomId, owner: true, onCommand: handlePeerC
 
 document.querySelectorAll('[data-icon]').forEach(el => { el.innerHTML = icon(el.dataset.icon, 20); });
 $('#projection-open').href = `chess-projection.html?room=${encodeURIComponent(roomId)}`;
+installGameProjectionLink($('#game-ar-open'), { game: 'chess', room: roomId });
 $('#family-open').href = `chess-family.html?room=${encodeURIComponent(roomId)}`;
 $('#confirm-move').checked = matchMedia('(max-width: 640px)').matches;
 $('#elder-avatar').innerHTML = elderAvatar();

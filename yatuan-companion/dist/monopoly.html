@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#6e8149"><title>芽团 · 小镇大富翁</title>
-  <link rel="icon" href="icon.svg"><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="chess.css"><link rel="stylesheet" href="tic-tac-toe.css"><link rel="stylesheet" href="monopoly.css">
+  <link rel="icon" href="icon.svg"><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="chess.css"><link rel="stylesheet" href="tic-tac-toe.css"><link rel="stylesheet" href="game-ar.css"><link rel="stylesheet" href="monopoly.css">
   <script>try{if(window.self!==window.top)document.documentElement.classList.add('embedded');}catch(e){document.documentElement.classList.add('embedded');}</script>
   <style>.embedded .chess-rail{display:none}.embedded .chess-workspace{margin-left:0}</style>
 </head>
@@ -21,7 +21,7 @@
   </aside>
   <div class="chess-workspace">
     <main class="chess-main">
-      <nav class="game-switch" aria-label="选择棋类"><a href="chess.html">五子棋</a><a href="tic-tac-toe.html">井字棋</a><a href="monopoly.html" aria-current="page">大富翁</a></nav>
+      <div class="game-topbar"><nav class="game-switch" aria-label="选择棋类"><a href="chess.html">五子棋</a><a href="tic-tac-toe.html">井字棋</a><a href="monopoly.html" aria-current="page">大富翁</a></nav><a id="game-ar-open" class="game-ar-link">桌面 AR 投影 ↗</a></div>
       <section class="monopoly-heading"><div><p class="chess-eyebrow">A LITTLE TOWN ADVENTURE <span>✦</span></p><h1>走走停停，<br>和你逛一座小镇。</h1><p>掷一颗骰子，买一间喜欢的小店，把沿途的惊喜都收进口袋。</p></div><div class="monopoly-heading-mark" aria-hidden="true"><span>✳</span><small>YATUAN<br>BOARD CLUB</small></div></section>
       <section class="monopoly-toolbar" aria-label="游戏设置">
         <div class="monopoly-modes" role="group" aria-label="选择游戏模式"><button type="button" data-mode="solo" aria-pressed="true">和芽团对战</button><button type="button" data-mode="local" aria-pressed="false">两人同屏</button></div>

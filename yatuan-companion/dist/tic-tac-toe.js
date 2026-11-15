@@ -1,6 +1,7 @@
 import { createGame, playMove, undoRound, chooseMove } from './tic-tac-toe-core.js';
 import { createChessSession } from './chess-session.js';
 import { characterArt, icon, esc } from './stage.js';
+import { installGameProjectionLink } from './game-ar-control.js';
 
 const $ = selector => document.querySelector(selector);
 const id = () => crypto.randomUUID();
@@ -18,6 +19,7 @@ const session = createChessSession({ roomId, owner: true, onCommand: handlePeerC
 
 document.querySelectorAll('[data-icon]').forEach(element => { element.innerHTML = icon(element.dataset.icon, 20); });
 $('#projection-open').href = `tic-tac-toe-view.html?view=projection&room=${encodeURIComponent(roomId)}`;
+installGameProjectionLink($('#game-ar-open'), { game: 'tic-tac-toe', room: roomId });
 $('#family-open').href = `tic-tac-toe-view.html?view=family&room=${encodeURIComponent(roomId)}`;
 $('#confirm-move').checked = matchMedia('(max-width: 640px)').matches;
 
