@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { ModelService } from '../server/src/modules';
 
 test('DeepSeek thinking defaults off through compatible providers and can be configured', async () => {
-  const keys = ['YATUAN_AI_ENDPOINT', 'YATUAN_AI_MODEL', 'YATUAN_AI_KEY', 'YATUAN_AI_THINKING'];
+  const keys = ['YATUAN_AI_ENDPOINT', 'YATUAN_AI_MODEL', 'YATUAN_VISION_MODEL', 'YATUAN_AI_KEY', 'YATUAN_AI_THINKING'];
   const previous = Object.fromEntries(keys.map(key => [key, process.env[key]]));
   const originalFetch = globalThis.fetch;
   const requests: any[] = [];
@@ -28,6 +28,16 @@ test('DeepSeek thinking defaults off through compatible providers and can be con
     process.env.YATUAN_AI_THINKING = 'auto';
     await model.chat([{ role: 'user', content: 'hello' }]);
     assert.equal('thinking' in requests.at(-1), false);
+
+    process.env.YATUAN_VISION_MODEL = 'deepseek-v4.1-flash';
+    await model.vision([{ role: 'user', content: 'image' }]);
+    assert.equal(requests.at(-1).model, 'deepseek-v4.1-flash');
+    assert.deepEqual(requests.at(-1).thinking, { type: 'disabled' });
+    await model.chat([{ role: 'user', content: 'hello' }]);
+    assert.equal(requests.at(-1).model, 'other-provider-model');
+    delete process.env.YATUAN_VISION_MODEL;
+    await model.vision([{ role: 'user', content: 'image' }]);
+    assert.equal(requests.at(-1).model, 'other-provider-model');
 
     process.env.YATUAN_AI_THINKING = 'invalid';
     await assert.rejects(model.chat([{ role: 'user', content: 'hello' }]), /YATUAN_AI_THINKING/);

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { once } from 'node:events';
 import WebSocket, { WebSocketServer } from 'ws';
-import { analyzeDesktop, DesktopVisionSession } from '../server/src/desktop-vision';
+import { analyzeDesktop, desktopInstructions, desktopObservationFailure, DesktopVisionSession } from '../server/src/desktop-vision';
 import { createRealtimeServer } from '../server/src/realtime';
 
 const image = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=';
@@ -23,6 +23,15 @@ test('desktop observations preserve real food results and validate image and mod
   await assert.rejects(analyzeDesktop(async () => '不是 JSON', image, '', new AbortController().signal), /有效/);
   await assert.rejects(analyzeDesktop(async () => JSON.stringify({ description: '苹果', foods: [] }), image, '', new AbortController().signal), /格式/);
   await assert.rejects(analyzeDesktop(async () => '', 'data:image/jpeg;base64,aGVsbG8=', '', new AbortController().signal), /格式/);
+});
+
+test('desktop failure messages distinguish missing camera frames from model errors', () => {
+  assert.equal(desktopObservationFailure(new Error('暂时没有可用的桌面画面，请连接摄像头')).reason, 'camera');
+  assert.equal(desktopObservationFailure(new Error('桌面观察已暂停，请先开启摄像头观察')).reason, 'paused');
+  const model = desktopObservationFailure(new Error('模型服务请求失败（500）'));
+  assert.equal(model.reason, 'analysis');
+  assert.match(model.message, /视觉模型/);
+  assert.doesNotMatch(model.message, /检查摄像头/);
 });
 
 test('package references require a clear specific match and retain their per-100g basis', async () => {
@@ -59,8 +68,15 @@ test('explicit biscuit and sausage demo references are limited to observed foods
     assert.equal(result.foodReferences?.[1].nutrients.sodiumMg, 950);
     assert.equal((await inspect([{ name: '苹果', group: '水果', certain: true }])).foodReferences, undefined);
     assert.equal((await inspect([{ name: '饼干', group: '', certain: false }])).foodReferences?.[0].visualCertainty, 'uncertain');
-    assert.equal((await inspect([{ name: '棕色块状物', group: '', certain: false }])).foodReferences, undefined);
+    const shapes = await inspect([{ name: '浅黄色块状食物', group: '', certain: false }, { name: '橙红色条状食物', group: '', certain: false }]);
+    assert.deepEqual(shapes.foods.map(food => food.name), ['饼干', '火腿肠']);
+    assert.ok(shapes.foods.every(food => food.classificationBasis === 'user-specified-test' && food.visualCertain === false));
+    assert.deepEqual(shapes.foodReferences?.map(ref => ref.visualCertainty), ['uncertain', 'uncertain']);
+    assert.deepEqual((await inspect([{ name: '浅黄色块状食物', group: '', certain: false }])).foods.map(food => food.name), ['饼干']);
+    assert.equal((await inspect([{ name: '棕色食物', group: '', certain: false }])).foodReferences, undefined);
     assert.equal((await inspect([])).foodReferences, undefined);
+    assert.match(desktopInstructions(), /不要在对话中提分类规则/);
+    assert.match(desktopInstructions(), /一两句自然简短/);
   } finally {
     if (previous === undefined) delete process.env.YATUAN_FOOD_DEMO; else process.env.YATUAN_FOOD_DEMO = previous;
   }
@@ -115,7 +131,7 @@ test('a failed background analysis can recover without exposing raw camera image
 
 test('real voice bridge handles desktop tools and typed replies while audio continues', { timeout: 15000 }, async t => {
   const http = createServer(), provider = new WebSocketServer({ noServer: true });
-  let upstream: WebSocket | undefined, frames = 0, analyses = 0, releaseVision!: () => void, aborted = false;
+  let upstream: WebSocket | undefined, frames = 0, analyses = 0, releaseVision!: () => void, aborted = false, failVision = false;
   const upstreamEvents: any[] = [], clientEvents: any[] = [], stored: any[] = [], persisted: any[] = [];
   const db: any = {
     state: async () => ({ personality: 'gentle' }), memory: { findMany: async () => [] }, snapshot: async () => ({ messages: stored }),
@@ -123,17 +139,21 @@ test('real voice bridge handles desktop tools and typed replies while audio cont
     voiceReply: async (id: string, text: string) => { stored.push({ id, role: 'assistant', text }); },
     emit: async (type: string, data: unknown) => { persisted.push({ type, data }); }, update: async () => {}, setRealtimePresentation() {},
   };
-  const bridge = createRealtimeServer(db, { visionConfigured: () => true, chat: async (messages, signal) => {
-    if (Array.isArray(messages[1]?.content)) {
+  const bridge = createRealtimeServer(db, { visionConfigured: () => true,
+    visionChat: async (messages, signal) => {
+      assert.ok(Array.isArray(messages[1]?.content), 'images are sent to the visual model');
+      if (failVision) throw new Error('模型服务请求失败（500）');
       analyses++; signal.addEventListener('abort', () => { aborted = true; releaseVision?.(); });
       if (analyses === 1 || analyses === 3) await new Promise<void>(done => { releaseVision = done; });
       if (analyses === 2) return JSON.stringify({ description: '包装写着优乐麦干烙蛋糕恋奶味。', foodPresent: true, foods: [{ name: '干烙蛋糕', group: '', certain: true }] });
       return JSON.stringify(observation);
-    }
-    assert.match(String(messages[0].content), /优乐麦/);
-    assert.match(String(messages[0].content), /per-100g/);
-    return '看起来是蛋糕，具体营养信息请参考包装。';
-  } });
+    },
+    chat: async messages => {
+      assert.match(String(messages[0].content), /优乐麦/);
+      assert.match(String(messages[0].content), /per-100g/);
+      return '看起来是蛋糕，具体营养信息请参考包装。';
+    },
+  });
   http.on('upgrade', (request, socket, head) => { const target = request.url === '/provider' ? provider : bridge; target.handleUpgrade(request, socket, head, ws => target.emit('connection', ws, request)); });
   const previousKey = process.env.VOLC_REALTIME_API_KEY, previousEndpoint = process.env.VOLC_REALTIME_ENDPOINT;
   await new Promise<void>(done => http.listen(0, '127.0.0.1', done));
@@ -191,6 +211,13 @@ test('real voice bridge handles desktop tools and typed replies while audio cont
   await until(() => clientEvents.some(event => event.type === 'binary'), 'typed reply is spoken');
   await until(() => stored.some(message => message.role === 'assistant'), 'typed reply persisted');
   assert.equal(stored.filter(message => message.role === 'assistant').length, 1, 'synthesis completion cannot persist the typed reply twice');
+  failVision = true;
+  providerSend({ type: 'response.function_call_arguments.done', items: [{ call_id: 'failed-model', name: 'observe_desktop', arguments: '{"question":"再看看"}' }] });
+  await until(() => upstreamEvents.some(event => event.items?.[0]?.call_id === 'failed-model'), 'model failure result');
+  const failedModel = JSON.parse(upstreamEvents.find(event => event.items?.[0]?.call_id === 'failed-model').items[0].content[0].text);
+  assert.equal(failedModel.reason, 'analysis');
+  assert.ok(clientEvents.some(event => event.type === 'vision.error' && /视觉模型/.test(event.message)));
+  failVision = false;
   send({ type: 'vision.pause' });
   providerSend({ type: 'response.function_call_arguments.done', items: [{ call_id: 'paused-call', name: 'observe_desktop', arguments: '{}' }] });
   await until(() => upstreamEvents.some(event => event.items?.[0]?.call_id === 'paused-call'), 'unavailable tool result');

@@ -26,7 +26,7 @@ export interface FoodReference {
 }
 export interface DesktopObservation {
   description: string; foodPresent: boolean;
-  foods: { name: string; group: string; certain: boolean }[];
+  foods: { name: string; group: string; certain: boolean; classificationBasis?: 'user-specified-test'; visualCertain?: boolean }[];
   observedAt: string;
   foodReferences?: FoodReference[];
 }
