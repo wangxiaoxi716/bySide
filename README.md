@@ -37,3 +37,18 @@ npm test
 ## 关于 Java 代码（已弃用）
 
 `src/` 与 `pom.xml` 是早期的 Java 后端实现，**已停止维护**，仅作为参考保留，不参与运行、构建与测试。前端不再对接它，请勿据此排查问题。后续如需清理，可直接删除这两个路径。
+
+## 桌边陪伴基座
+
+新版基座位于 [`byside-foundation/`](byside-foundation/)，使用 Node.js 22、TypeScript、NestJS、Prisma 和 SQLite，提供原版陪伴界面、React 控制台、实时语音、桌面 AR 预览和扩展接口。
+
+```sh
+cd byside-foundation
+npm install
+cp .env.example .env
+npm run db:setup
+npm run build
+npm start
+```
+
+打开 <http://127.0.0.1:4173>。模型与语音服务配置、API 和设备接入见 [基座 README](byside-foundation/README.md)。

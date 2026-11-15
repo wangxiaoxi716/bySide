@@ -1,0 +1,25 @@
+{
+  "name": "byside-foundation",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "server",
+    "web"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w server",
+    "build": "npm run build -w web && npm run build -w server",
+    "start": "npm run start -w server",
+    "db:setup": "npm run db:setup -w server",
+    "test": "npm run test -w server",
+    "voice:native": "npm run build -w server && node server/dist/native-voice-cli.js",
+    "dev:foundation": "concurrently -k -n api,web \"npm run dev -w server\" \"npm run dev -w web\""
+  },
+  "devDependencies": {
+    "concurrently": "9.1.2",
+    "typescript": "5.7.3"
+  },
+  "engines": {
+    "node": ">=22.12"
+  }
+}
