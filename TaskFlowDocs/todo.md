@@ -27,3 +27,11 @@
 - Goal: 为芽团棋室开发大富翁游戏并生成卡片图片
 - Task: `TaskFlowDocs/2026-11-15-yatuan-monopoly/`
 - Next action: 同步最新 main 并将大富翁提交至 zt，供用户查看。
+
+## 让五子棋、井字棋和大富翁能够在桌面 AR 投影中实时显示
+
+- ID: TF-20261115-e518d2
+- Status: done
+- Goal: 让五子棋、井字棋和大富翁能够在桌面 AR 投影中实时显示
+- Task: `TaskFlowDocs/achieved/2026-11-15-game-ar-projection/`
+- Next action: None — completed and archived.

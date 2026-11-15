@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#6e8149"><title>芽团 · 井字棋小搭子</title>
-  <link rel="icon" href="icon.svg"><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="chess.css"><link rel="stylesheet" href="tic-tac-toe.css">
+  <link rel="icon" href="icon.svg"><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="chess.css"><link rel="stylesheet" href="tic-tac-toe.css"><link rel="stylesheet" href="game-ar.css">
   <script>try{if(window.self!==window.top)document.documentElement.classList.add('embedded');}catch(e){document.documentElement.classList.add('embedded');}</script>
   <style>.embedded .chess-rail{display:none}.embedded .chess-workspace{margin-left:0}</style>
 </head>
@@ -22,7 +22,7 @@
   <div class="chess-workspace">
     <a id="projection-open" class="ttt-projection-link" target="_blank" rel="noopener">打开棋局投影 ↗</a>
     <main class="chess-main">
-      <nav class="game-switch" aria-label="选择棋类"><a href="chess.html">五子棋</a><a href="tic-tac-toe.html" aria-current="page">井字棋</a><a href="monopoly.html">大富翁</a></nav>
+      <div class="game-topbar"><nav class="game-switch" aria-label="选择棋类"><a href="chess.html">五子棋</a><a href="tic-tac-toe.html" aria-current="page">井字棋</a><a href="monopoly.html">大富翁</a></nav><a id="game-ar-open" class="game-ar-link">桌面 AR 投影 ↗</a></div>
       <section class="chess-heading"><div><p class="chess-eyebrow">THE LITTLE GAME CLUB <span>✦</span></p><h1>小小一局，慢慢陪你。</h1><p>九个格子，和芽团一起画下今天的好心情。</p></div><div class="heading-flower" aria-hidden="true"><span>✳</span><small>不着急，慢慢来</small></div></section>
       <section class="chess-modebar" aria-label="陪伴方式">
         <div class="chess-tabs" role="group" aria-label="选择对弈伙伴">

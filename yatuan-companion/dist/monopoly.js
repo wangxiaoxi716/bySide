@@ -1,11 +1,18 @@
 import { BOARD, EVENT_CARDS, MAX_ROUNDS, PASS_BONUS, START_BALANCE, createGame, scorePlayers, rollDice, decideProperty, acknowledgeEvent, endTurn, shouldBotBuy } from './monopoly-core.js';
 import { TILE_ART, DICE_ART } from './monopoly-assets.js';
 import { icon, esc } from './stage.js';
+import { createChessSession } from './chess-session.js';
+import { installGameProjectionLink } from './game-ar-control.js';
 
 const $ = selector => document.querySelector(selector);
 const positions = [[5,1],[5,2],[5,3],[5,4],[5,5],[4,5],[3,5],[2,5],[1,5],[1,4],[1,3],[1,2],[1,1],[2,1],[3,1],[4,1]];
 const art = { property: 'assets/monopoly/property-card-web.jpg', event: 'assets/monopoly/event-card-web.jpg' };
 let game = createGame(), botTimer = null, epoch = 0, lastCard = null, resultShown = false, infoAction = null;
+// randomUUID is unavailable in non-secure LAN pages; keeping this optional
+// preserves the original local game even when that browser API is absent.
+const roomId = `monopoly-${globalThis.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`}`;
+const projectionSession = createChessSession({ roomId, owner: true });
+installGameProjectionLink($('#game-ar-open'), { game: 'monopoly', room: roomId });
 
 document.querySelectorAll('[data-icon]').forEach(element => { element.innerHTML = icon(element.dataset.icon, 20); });
 const tileElements = BOARD.map((tile, index) => {
@@ -77,6 +84,7 @@ function render() {
     : !isHuman ? '芽团正在行动…' : game.phase === 'decision' || game.phase === 'event' ? '请先查看卡片。' : '';
   renderBoard(); renderPlayers(); renderPreview();
   $('#game-log').innerHTML = [...game.history].reverse().slice(0, 8).map(message => `<li>${esc(message)}</li>`).join('');
+  projectionSession.publish({ kind: 'monopoly', game, lastCard });
 }
 
 function cardFromPending(state) {
@@ -190,5 +198,5 @@ $('#rules-open').addEventListener('click', () => openInfo('游戏规则', '在�
 $('#info-cancel').addEventListener('click', () => { infoAction = null; $('#info-dialog').close(); });
 $('#info-confirm').addEventListener('click', () => { const action = infoAction; infoAction = null; $('#info-dialog').close(); action?.(); });
 $('#info-dialog').addEventListener('cancel', () => { infoAction = null; });
-addEventListener('pagehide', () => cancelBot());
+addEventListener('pagehide', () => { cancelBot(); projectionSession.close(); });
 render();
