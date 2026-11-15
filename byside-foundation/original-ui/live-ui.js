@@ -3,8 +3,8 @@ import { createDesktopCompanion } from './desktop-companion.js';
 import { getAIConfig, saveAIConfig, requestAI } from './ai.js';
 import { esc, icon } from './stage.js';
 
-export function mountLiveUI({ beforeStart = () => {}, onActive = () => {} } = {}) {
-  const controller = createDesktopCompanion();
+export function mountLiveUI({ beforeStart = () => {}, onActive = () => {}, realtimeTools = [], onRealtimeToolCall } = {}) {
+  const controller = createDesktopCompanion({ tools: realtimeTools, onToolCall: onRealtimeToolCall });
   const panel = document.createElement('dialog');
   panel.className = 'live-dialog';
   panel.setAttribute('aria-labelledby', 'live-title');

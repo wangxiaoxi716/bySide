@@ -7,6 +7,7 @@ import { getDemoCharacterState, subscribeDemo } from './demo.js';
 import { mountCameraOverlay } from './camera-overlay.mjs';
 import { GAME_AR_MESSAGE, GAME_AR_WINDOW, createGameProjectionController, validGameSelection } from './game-ar-control.js';
 import { renderGameProjection } from './game-ar-view.js';
+import { createVoiceGameController, voiceGameTools } from './voice-games.js';
 
 const root = document.querySelector('#projection-root');
 const SCENE_WIDTH = 510;
@@ -48,6 +49,8 @@ function render(s) {
   const stats = root.querySelector('.projection-stats');
   stats.innerHTML = miniStats(s);
   stats.hidden = !p.showStats;
+  const gameCaption = root.querySelector('.gar-voice-caption');
+  if (gameCaption && gameCaption.textContent !== s.speech) gameCaption.textContent = s.speech;
   overlay?.render();
 }
 
@@ -66,7 +69,21 @@ document.querySelector('#projection-fullscreen').onclick = async () => {
   }
 };
 
-const liveUI=mountLiveUI();
+let voiceGame;
+const liveUI=mountLiveUI({
+  realtimeTools: voiceGameTools,
+  onRealtimeToolCall: item => {
+    if (!voiceGame) return { ok: false, message: '游戏正在准备，请稍后再试。' };
+    if (!voiceGame.isActive() && gameProjection.isActive() && item.name === 'operate_tabletop_game') {
+      return { ok: false, message: '当前棋盘由其他窗口控制。请先说开始一局语音对局。' };
+    }
+    const result = voiceGame.handleTool(item);
+    if (item.name === 'open_tabletop_game' && result.ok && root.hidden) {
+      return { ...result, message: `${result.message} 若要看到 AR 棋盘，请连接摄像头并识别白纸或手动圈定桌面。` };
+    }
+    return result;
+  },
+});
 overlay=mountCameraOverlay({root,liveUI,restoreProjection:()=>render(getState())});
 const voiceButton = document.querySelector('#projection-voice');
 const voiceStatus = document.querySelector('#projection-voice-status');
@@ -137,9 +154,28 @@ const gameProjection = createGameProjectionController({ onUpdate(view) {
   }
   overlay.render();
 } });
-companionButton.addEventListener('click', () => gameProjection.clear());
+voiceGame = createVoiceGameController({ onChange(kind, snapshot) {
+  if (!kind) {
+    root.querySelector('.projection-scene').hidden = false;
+    gameHost.hidden = true; companionButton.hidden = true; gameHost.replaceChildren();
+  } else {
+    if (gameProjection.isActive()) gameProjection.clear();
+    root.querySelector('.projection-scene').hidden = true;
+    gameHost.hidden = false; companionButton.hidden = false;
+    gameHost.innerHTML = renderGameProjection({ game: kind, snapshot, connected: true });
+    const caption = gameHost.querySelector('.gar-voice-caption');
+    if (caption) caption.textContent = getState().speech;
+    if (!overlay.isActive()) void overlay.open(false);
+  }
+  overlay.render();
+} });
+companionButton.addEventListener('click', () => {
+  if (voiceGame.isActive()) voiceGame.clear();
+  else gameProjection.clear();
+});
 window.addEventListener('message', event => {
   if (event.origin !== location.origin || event.data?.type !== GAME_AR_MESSAGE || !validGameSelection(event.data)) return;
+  voiceGame.discard();
   gameProjection.select(event.data);
   if (!overlay.isActive()) overlay.open(false);
 });

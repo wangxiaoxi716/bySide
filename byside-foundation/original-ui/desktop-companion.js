@@ -77,7 +77,7 @@ export function createDesktopCompanion(overrides = {}) {
     const firstFrame = visionEnabled ? await openCamera() : undefined;
     if (token !== generation) return false;
     voice = io.createVoice({
-      desktopVision: visionEnabled, fullDuplex,
+      desktopVision: visionEnabled, fullDuplex, tools: io.tools || [], onToolCall: io.onToolCall,
       onReady() {
         if (token !== generation) return;
         ready = true;

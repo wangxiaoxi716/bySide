@@ -2,7 +2,7 @@ import { beginPresentation } from './state.js';
 import { PcmFrameEncoder } from './pcm-frames.mjs';
 
 // Browser-side audio only. The local foundation owns the Doubao connection and key.
-export function createRealtimeVoiceSession({ fullDuplex = false, desktopVision = false, onReady, onVision, onClose, onState, onTranscript, onReply, onError } = {}) {
+export function createRealtimeVoiceSession({ fullDuplex = false, desktopVision = false, tools = [], onToolCall, onReady, onVision, onClose, onState, onTranscript, onReply, onError } = {}) {
   let active = false, generation = 0, resources = null, releaseLock = null, finishResolve = null, stopped = Promise.resolve();
   let lastState = null;
   const notify = value => {
@@ -69,7 +69,7 @@ export function createRealtimeVoiceSession({ fullDuplex = false, desktopVision =
     if (active) return true;
     if (!supported) { onError?.('当前浏览器不支持实时语音，请使用桌面 Chrome。'); notify('idle'); return false; }
     active = true; const token = ++generation;
-    const current = { socket: null, stream: null, source: null, processor: null, sink: null, micContext: null, playContext: null, playing: new Set(), playNext: 0, speaking: false, ready: false, closeTimer: null, replyText: '', presentation: null };
+    const current = { socket: null, stream: null, source: null, processor: null, sink: null, micContext: null, playContext: null, playing: new Set(), playNext: 0, speaking: false, ready: false, closeTimer: null, replyText: '', presentation: null, toolQueue: Promise.resolve(), toolCalls: new Set() };
     resources = current;
     notify('starting');
     try {
@@ -111,7 +111,7 @@ export function createRealtimeVoiceSession({ fullDuplex = false, desktopVision =
       current.source.connect(current.processor); current.processor.connect(current.sink); current.sink.connect(current.micContext.destination);
       current.socket = new WebSocket(`${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/api/v1/speech/realtime`);
       current.socket.binaryType = 'arraybuffer';
-      current.socket.onopen = () => { if (active && token === generation) current.socket.send(JSON.stringify({ type: 'session.start', fullDuplex, ...(desktopVision ? { desktopVision: true } : {}) })); };
+      current.socket.onopen = () => { if (active && token === generation) current.socket.send(JSON.stringify({ type: 'session.start', fullDuplex, ...(desktopVision ? { desktopVision: true } : {}), ...(tools.length ? { tools } : {}) })); };
       current.socket.onmessage = event => {
         if (resources !== current || token !== generation) return;
         if (typeof event.data !== 'string') {
@@ -159,6 +159,21 @@ export function createRealtimeVoiceSession({ fullDuplex = false, desktopVision =
         else if (message.type === 'transcript.error') onError?.(message.message || '没有听清，请再说一次。');
         else if (message.type === 'input.error') onError?.(message.message || '文字发送失败，请重试。');
         else if (message.type.startsWith('vision.')) onVision?.(message);
+        else if (message.type === 'tool.call' && Array.isArray(message.items)) {
+          for (const item of message.items) {
+            if (typeof item?.callId !== 'string' || current.toolCalls.has(item.callId)) continue;
+            current.toolCalls.add(item.callId);
+            current.toolQueue = current.toolQueue.then(async () => {
+              if (!active || resources !== current || token !== generation) return;
+              let output;
+              try { output = onToolCall ? await onToolCall(item) : { ok: false, message: '该能力暂不可用。' }; }
+              catch { output = { ok: false, message: '操作没有完成，请重试。' }; }
+              if (active && resources === current && token === generation && current.socket?.readyState === WebSocket.OPEN) {
+                current.socket.send(JSON.stringify({ type: 'tool.result', callId: item.callId, output }));
+              }
+            });
+          }
+        }
         else if (message.type === 'session.closed') finish(current);
       };
       current.socket.onerror = () => { if (active && resources === current) fail('无法连接本机实时语音服务。', current); };
