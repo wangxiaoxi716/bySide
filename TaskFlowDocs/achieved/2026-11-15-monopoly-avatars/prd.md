@@ -1,6 +1,6 @@
 # 大富翁玩家与芽团头像
 > Task version: v1
-> Status: checking
+> Status: completed
 
 ## Goal
 为大富翁生成与现有小镇画风一致的玩家和芽团头像，并在游戏中使用。

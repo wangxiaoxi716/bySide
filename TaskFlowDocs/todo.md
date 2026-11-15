@@ -39,16 +39,10 @@
 ## 为大富翁生成玩家与芽团头像并接入游戏界面
 
 - ID: TF-20261115-32e1ac
-- Status: in_progress
-- Priority: normal
-- Owner: Unknown
-- Source: 用户请求
-- Kind: capability
-- Added: 2026-11-15
-- Updated: 2026-11-15
+- Status: done
 - Goal: 为大富翁生成玩家与芽团头像并接入游戏界面
-- Task: `TaskFlowDocs/2026-11-15-monopoly-avatars/`
-- Next action: 用户查看头像，按需调整或另行要求推送。
+- Task: `TaskFlowDocs/achieved/2026-11-15-monopoly-avatars/`
+- Next action: None — completed and archived.
 
 ## 优化大富翁中伙伴的头像
 

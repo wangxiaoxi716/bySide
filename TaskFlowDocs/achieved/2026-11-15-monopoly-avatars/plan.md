@@ -1,6 +1,6 @@
 # Plan — 大富翁玩家与芽团头像
 > Task version: v1
-> Status: checking
+> Status: completed
 
 No spec required — 现有展示层中新增静态图像与角色映射，不改变游戏规则或同步协议。
 
