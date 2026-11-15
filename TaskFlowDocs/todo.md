@@ -35,3 +35,45 @@
 - Goal: 让五子棋、井字棋和大富翁能够在桌面 AR 投影中实时显示
 - Task: `TaskFlowDocs/achieved/2026-11-15-game-ar-projection/`
 - Next action: None — completed and archived.
+
+## 为大富翁生成玩家与芽团头像并接入游戏界面
+
+- ID: TF-20261115-32e1ac
+- Status: in_progress
+- Priority: normal
+- Owner: Unknown
+- Source: 用户请求
+- Kind: capability
+- Added: 2026-11-15
+- Updated: 2026-11-15
+- Goal: 为大富翁生成玩家与芽团头像并接入游戏界面
+- Task: `TaskFlowDocs/2026-11-15-monopoly-avatars/`
+- Next action: 用户查看头像，按需调整或另行要求推送。
+
+## 优化大富翁中伙伴的头像
+
+- ID: TF-20261115-5f413d
+- Status: in_progress
+- Priority: normal
+- Owner: Unknown
+- Source: 用户请求
+- Kind: capability
+- Added: 2026-11-15
+- Updated: 2026-11-15
+- Goal: 优化大富翁中伙伴的头像
+- Task: `TaskFlowDocs/2026-11-15-monopoly-partner-avatar/`
+- Next action: 用户查看伙伴头像，按需调整或另行要求推送。
+
+## 为大富翁增加骰子转动和棋子逐格行走动画，并同步到投影
+
+- ID: TF-20261115-90826c
+- Status: in_progress
+- Priority: normal
+- Owner: Unknown
+- Source: 用户请求
+- Kind: capability
+- Added: 2026-11-15
+- Updated: 2026-11-15
+- Goal: 为大富翁增加骰子转动和棋子逐格行走动画，并同步到投影
+- Task: `TaskFlowDocs/2026-11-15-monopoly-movement/`
+- Next action: 用户查看动画和投影效果，按需调整或另行要求推送。
