@@ -1,13 +1,13 @@
 import { BOARD, EVENT_CARDS, MAX_ROUNDS, PASS_BONUS, START_BALANCE, createGame, scorePlayers, rollDice, decideProperty, acknowledgeEvent, endTurn, shouldBotBuy } from './monopoly-core.js';
-import { TILE_ART, DICE_ART } from './monopoly-assets.js';
+import { TILE_ART, DICE_ART, monopolyAvatar } from './monopoly-assets.js';
+import { BOARD_POSITIONS, buildRollFrames, stepOrigin } from './monopoly-animation.js';
 import { icon, esc } from './stage.js';
 import { createChessSession } from './chess-session.js';
 import { installGameProjectionLink } from './game-ar-control.js';
 
 const $ = selector => document.querySelector(selector);
-const positions = [[5,1],[5,2],[5,3],[5,4],[5,5],[4,5],[3,5],[2,5],[1,5],[1,4],[1,3],[1,2],[1,1],[2,1],[3,1],[4,1]];
 const art = { property: 'assets/monopoly/property-card-web.jpg', event: 'assets/monopoly/event-card-web.jpg' };
-let game = createGame(), botTimer = null, epoch = 0, lastCard = null, resultShown = false, infoAction = null;
+let game = createGame(), botTimer = null, animationTimer = null, presentation = null, epoch = 0, lastCard = null, resultShown = false, infoAction = null;
 // randomUUID is unavailable in non-secure LAN pages; keeping this optional
 // preserves the original local game even when that browser API is absent.
 const roomId = `monopoly-${globalThis.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`}`;
@@ -20,27 +20,35 @@ const tileElements = BOARD.map((tile, index) => {
   element.className = 'mono-tile';
   element.dataset.kind = tile.type;
   if (tile.group) element.dataset.group = tile.group;
-  element.style.gridRow = positions[index][0];
-  element.style.gridColumn = positions[index][1];
+  element.dataset.position = index;
+  element.style.gridRow = BOARD_POSITIONS[index][0];
+  element.style.gridColumn = BOARD_POSITIONS[index][1];
   element.setAttribute('role', 'listitem');
   $('#monopoly-board').append(element);
   return element;
 });
 
 function humanTurn() { return game.players[game.turn].kind === 'human'; }
-function cancelBot() { epoch++; clearTimeout(botTimer); botTimer = null; }
+function cancelBot() { epoch++; clearTimeout(botTimer); clearTimeout(animationTimer); botTimer = null; animationTimer = null; presentation = null; }
 function isNewGame() { return game.round === 1 && game.turn === 0 && game.dice === null && game.owners.every(owner => owner === null); }
 function currency(value) { return Number(value).toLocaleString('zh-CN'); }
+function avatarContent(playerIndex) {
+  const src = monopolyAvatar(game.mode, playerIndex);
+  return src ? `<img src="${src}" alt="" width="96" height="96">` : '友';
+}
 
 function renderBoard() {
   tileElements.forEach((element, index) => {
     const tile = BOARD[index], owner = game.owners[index];
-    const playersHere = game.players.map((player, playerIndex) => player.position === index ? playerIndex : null).filter(value => value !== null);
+    const playersHere = game.players.map((player, playerIndex) => (presentation?.positions[playerIndex] ?? player.position) === index ? playerIndex : null).filter(value => value !== null);
+    const stepping = presentation?.phase === 'moving' && presentation.positions[game.turn] === index;
+    element.classList.toggle('is-travelling', Boolean(stepping));
+    const origin = stepping ? stepOrigin(presentation.previousPosition, index) : null;
     const ownerText = owner === null ? '' : `${game.players[owner].name}的地产`;
     const detail = tile.type === 'property' ? `${tile.price} · 租 ${tile.rent}` : tile.detail || (tile.type === 'event' ? '抽取事件卡' : '');
     const playersText = playersHere.map(playerIndex => game.players[playerIndex].name).join('、');
     element.setAttribute('aria-label', `${tile.name}，${detail}${ownerText ? `，${ownerText}` : ''}${playersText ? `，${playersText}在这里` : ''}`);
-    element.innerHTML = `<img class="mono-tile-image" src="${TILE_ART[index]}" alt="" width="360" height="360"><div class="mono-tile-info"><strong>${esc(tile.name)}</strong><small>${esc(detail)}</small></div>${owner === null ? '' : `<span class="mono-owner owner-${owner}">${esc(game.players[owner].name)}的</span>`}<div class="mono-tokens" aria-hidden="true">${playersHere.map(playerIndex => `<span class="mono-token token-${playerIndex}">${playerIndex === 0 ? '我' : game.mode === 'solo' ? '芽' : '友'}</span>`).join('')}</div>`;
+    element.innerHTML = `<img class="mono-tile-image" src="${TILE_ART[index]}" alt="" width="360" height="360"><div class="mono-tile-info"><strong>${esc(tile.name)}</strong><small>${esc(detail)}</small></div>${owner === null ? '' : `<span class="mono-owner owner-${owner}">${esc(game.players[owner].name)}的</span>`}<div class="mono-tokens" aria-hidden="true">${playersHere.map(playerIndex => `<span class="mono-token token-${playerIndex}${stepping && playerIndex === game.turn ? ' is-stepping' : ''}"${stepping && playerIndex === game.turn ? ` style="--step-from-x:${origin.x};--step-from-y:${origin.y}"` : ''}>${avatarContent(playerIndex)}</span>`).join('')}</div>`;
   });
 }
 
@@ -48,7 +56,7 @@ function renderPlayers() {
   const scores = scorePlayers(game);
   $('#player-list').innerHTML = game.players.map((player, index) => {
     const count = game.owners.filter(owner => owner === index).length;
-    return `<div class="mono-player${game.turn === index && game.phase !== 'ended' ? ' is-active' : ''}"><span class="mono-player-avatar">${index === 0 ? '我' : game.mode === 'solo' ? '芽' : '友'}</span><div><strong>${esc(player.name)}${game.turn === index && game.phase !== 'ended' ? ' · 当前回合' : ''}</strong><small>地产 ${count} 处 · 总资产 ${currency(scores[index])}</small></div><div class="mono-player-money">${currency(player.money)}<small>小叶币</small></div></div>`;
+    return `<div class="mono-player${game.turn === index && game.phase !== 'ended' ? ' is-active' : ''}"><span class="mono-player-avatar" aria-hidden="true">${avatarContent(index)}</span><div><strong>${esc(player.name)}${game.turn === index && game.phase !== 'ended' ? ' · 当前回合' : ''}</strong><small>地产 ${count} 处 · 总资产 ${currency(scores[index])}</small></div><div class="mono-player-money">${currency(player.money)}<small>小叶币</small></div></div>`;
   }).join('');
 }
 
@@ -68,23 +76,31 @@ function renderPreview() {
 function render() {
   const player = game.players[game.turn], isHuman = humanTurn(), ended = game.phase === 'ended';
   $('#round-label').textContent = `第 ${game.round} / ${MAX_ROUNDS} 轮`;
-  document.querySelectorAll('[data-mode]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.mode === game.mode)));
+  document.querySelectorAll('[data-mode]').forEach(button => { button.setAttribute('aria-pressed', String(button.dataset.mode === game.mode)); button.disabled = Boolean(presentation); });
+  $('#restart-button').disabled = Boolean(presentation);
+  $('#rules-open').disabled = Boolean(presentation);
   $('#turn-title').textContent = ended ? '小镇旅行结束啦' : `轮到${player.name}出发`;
-  const description = ended ? '谢谢一起走过这座小镇。' : game.phase === 'roll'
+  const description = presentation?.phase === 'rolling' ? '骰子转起来啦，看看会掷出几点。'
+    : presentation?.phase === 'showing' ? `掷出了 ${presentation.dice} 点，准备出发。`
+      : presentation?.phase === 'moving' ? `${player.name}正在前进，第 ${presentation.step} / ${presentation.dice} 步。`
+        : ended ? '谢谢一起走过这座小镇。' : game.phase === 'roll'
     ? isHuman ? '准备好了吗？掷骰子，看看下一站。' : '芽团正在想一想，准备出发。'
     : game.phase === 'decision' ? isHuman ? '遇到一处新地产，看看要不要买。' : '芽团正在考虑这处地产。'
       : game.phase === 'event' ? isHuman ? '打开来信，看看发生了什么。' : '芽团收到了一封小镇来信。'
         : isHuman ? '这一步完成啦，可以结束回合。' : '芽团这一步走完啦。';
   $('#turn-detail').textContent = description;
-  $('#dice-display').innerHTML = game.dice ? `<img src="${DICE_ART[game.dice - 1]}" alt="" width="256" height="256">` : '✦';
-  $('#dice-display').setAttribute('aria-label', game.dice ? `掷出 ${game.dice} 点` : '还未掷骰子');
+  const die = presentation?.dice ?? game.dice;
+  $('#dice-display').innerHTML = die ? `<img src="${DICE_ART[die - 1]}" alt="" width="256" height="256">` : '✦';
+  $('#dice-display').classList.toggle('is-rolling', presentation?.phase === 'rolling');
+  $('#dice-display').setAttribute('aria-label', presentation?.phase === 'rolling' ? '骰子正在转动' : die ? `掷出 ${die} 点` : '还未掷骰子');
   $('#roll-button').hidden = game.phase !== 'roll' || !isHuman;
+  $('#roll-button').disabled = Boolean(presentation);
   $('#next-button').hidden = game.phase !== 'turn-end' || !isHuman;
-  $('#board-status').textContent = ended ? (game.result.winner === null ? '平分秋色，刚刚好。' : `${game.players[game.result.winner].name}赢得了这场旅行。`)
+  $('#board-status').textContent = presentation ? '' : ended ? (game.result.winner === null ? '平分秋色，刚刚好。' : `${game.players[game.result.winner].name}赢得了这场旅行。`)
     : !isHuman ? '芽团正在行动…' : game.phase === 'decision' || game.phase === 'event' ? '请先查看卡片。' : '';
   renderBoard(); renderPlayers(); renderPreview();
   $('#game-log').innerHTML = [...game.history].reverse().slice(0, 8).map(message => `<li>${esc(message)}</li>`).join('');
-  projectionSession.publish({ kind: 'monopoly', game, lastCard });
+  projectionSession.publish({ kind: 'monopoly', game, lastCard, presentation });
 }
 
 function cardFromPending(state) {
@@ -142,13 +158,36 @@ function apply(next) {
   scheduleBot();
 }
 
+function beginRoll() {
+  if (presentation || game.phase !== 'roll' || game.result) return;
+  const resolved = rollDice(game);
+  if (resolved === game) return;
+  const reducedMotion = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+  const frames = buildRollFrames(game, resolved, { reducedMotion });
+  const currentEpoch = epoch;
+  let index = 0;
+  function advance() {
+    if (currentEpoch !== epoch) return;
+    if (index === frames.length) {
+      animationTimer = null;
+      presentation = null;
+      apply(resolved);
+      return;
+    }
+    presentation = frames[index++];
+    render();
+    animationTimer = setTimeout(advance, presentation.duration);
+  }
+  advance();
+}
+
 function scheduleBot() {
-  if (botTimer || game.phase === 'ended' || humanTurn()) return;
+  if (presentation || botTimer || game.phase === 'ended' || humanTurn()) return;
   const currentEpoch = epoch;
   botTimer = setTimeout(() => {
     botTimer = null;
     if (currentEpoch !== epoch || humanTurn()) return;
-    if (game.phase === 'roll') apply(rollDice(game));
+    if (game.phase === 'roll') beginRoll();
     else if (game.phase === 'decision') apply(decideProperty(game, shouldBotBuy(game)));
     else if (game.phase === 'event') apply(acknowledgeEvent(game));
     else if (game.phase === 'turn-end') apply(endTurn(game));
@@ -176,7 +215,7 @@ function askReset(mode) {
   openInfo('新的一局', '重新出发吗？', '<p>当前棋局会结束，地产和小叶币都会重新开始。</p>', '开始新的一局', () => reset(mode), true);
 }
 
-$('#roll-button').addEventListener('click', () => { if (humanTurn()) apply(rollDice(game)); });
+$('#roll-button').addEventListener('click', () => { if (humanTurn()) beginRoll(); });
 $('#next-button').addEventListener('click', () => { if (humanTurn()) apply(endTurn(game)); });
 $('#card-primary').addEventListener('click', () => {
   if (!humanTurn() || !game.pending) return;
@@ -190,9 +229,9 @@ $('#card-secondary').addEventListener('click', () => {
   $('#card-dialog').close(); apply(next);
 });
 $('#card-dialog').addEventListener('cancel', event => event.preventDefault());
-$('#restart-button').addEventListener('click', () => askReset(game.mode));
+$('#restart-button').addEventListener('click', () => { if (!presentation) askReset(game.mode); });
 document.querySelectorAll('[data-mode]').forEach(button => button.addEventListener('click', () => {
-  if (button.dataset.mode !== game.mode) askReset(button.dataset.mode);
+  if (!presentation && button.dataset.mode !== game.mode) askReset(button.dataset.mode);
 }));
 $('#rules-open').addEventListener('click', () => openInfo('游戏规则', '在小镇，慢慢玩。', `<p>两位旅伴各有 ${START_BALANCE} 小叶币，你先掷骰子。每回合按点数前进，经过或停在出发点获得 ${PASS_BONUS}。</p><ul><li>到无主地产时，可以选择购买或跳过；到对方地产时支付标注的租金。</li><li>惊喜来信会带来收入或支出；小镇庆典要支付 80 小叶币。</li><li>现金不足以支付费用时破产，对手获胜。没有房屋、升级或抵押。</li><li>完成 ${MAX_ROUNDS} 轮后，按现金加已购地产原价比较总资产；相同则平局。</li></ul><p>「和芽团对战」由本地程序自动落子；「两人同屏」轮流操作。游戏不使用真实货币，也不会保存进度。</p>`, '知道啦'));
 $('#info-cancel').addEventListener('click', () => { infoAction = null; $('#info-dialog').close(); });

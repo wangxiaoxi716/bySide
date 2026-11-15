@@ -57,3 +57,20 @@
 .mono-tokens{top:6px;bottom:auto;z-index:3}
 .mono-die{width:54px;height:54px;overflow:hidden}.mono-die img{width:100%;height:100%;object-fit:cover;border-radius:inherit}
 @media(max-width:700px){.mono-tile{padding:0}.mono-tile::before{height:3px}.mono-tile-info{padding:2px 3px}.mono-tile .mono-owner{top:4px;left:2px;font-size:7px;padding:1px 2px}.mono-tokens{top:4px}.mono-die{width:38px;height:38px}}
+/* Generated player portraits are shared with the AR projection. */
+.mono-player{grid-template-columns:40px 1fr auto}
+.mono-player-avatar{width:38px;height:38px;overflow:hidden}
+.mono-token{width:25px;height:25px;overflow:hidden}
+.mono-player-avatar img,.mono-token img{display:block;width:100%;height:100%;object-fit:cover;border-radius:50%}
+@media(max-width:1000px){.mono-player{grid-template-columns:35px 1fr auto}.mono-player-avatar{width:33px;height:33px}.mono-token{width:22px;height:22px}}
+@media(max-width:700px){.mono-token{width:20px;height:20px}}
+
+/* One hop travels between adjacent grid cells; the board remains responsive. */
+.monopoly-board{container-type:inline-size;--mono-step:calc((100cqw - 16px) / 5 + 4px)}
+.mono-tile.is-travelling{overflow:visible;z-index:5}
+.mono-token.is-stepping{animation:mono-step 340ms ease-in-out both}
+.mono-die.is-rolling{animation:mono-dice-roll 600ms ease-in-out infinite}
+.monopoly-toolbar button:disabled{opacity:.5;cursor:not-allowed}
+@keyframes mono-step{0%{transform:translate(calc(var(--step-from-x) * var(--mono-step)),calc(var(--step-from-y) * var(--mono-step))) scale(.92)}50%{transform:translate(calc(var(--step-from-x) * var(--mono-step) / 2),calc(var(--step-from-y) * var(--mono-step) / 2 - 8px)) scale(1.08)}100%{transform:translate(0,0) scale(1)}}
+@keyframes mono-dice-roll{0%{transform:rotate(-12deg) scale(.93)}50%{transform:rotate(190deg) scale(1.08)}100%{transform:rotate(348deg) scale(.93)}}
+@media(max-width:700px){.monopoly-board{--mono-step:calc((100cqw - 12px) / 5 + 3px)}}

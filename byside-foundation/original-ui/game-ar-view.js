@@ -1,9 +1,9 @@
 import { esc } from './stage.js';
 import { BOARD, MAX_ROUNDS, createGame as createMonopolyGame } from './monopoly-core.js';
-import { TILE_ART, DICE_ART } from './monopoly-assets.js';
+import { TILE_ART, DICE_ART, monopolyAvatar } from './monopoly-assets.js';
+import { BOARD_POSITIONS, validRollPresentation, stepOrigin } from './monopoly-animation.js';
 
 const titles = { chess: '五子棋', 'tic-tac-toe': '井字棋', monopoly: '芽团大富翁' };
-const tilePositions = [[5,1],[5,2],[5,3],[5,4],[5,5],[4,5],[3,5],[2,5],[1,5],[1,4],[1,3],[1,2],[1,1],[2,1],[3,1],[4,1]];
 const money = value => Number.isFinite(value) ? value.toLocaleString('zh-CN') : '—';
 
 function safeChess(snapshot, kind) {
@@ -49,15 +49,22 @@ function ticTacToeBoard(game) {
   return `<div class="gar-ttt" role="img" aria-label="同步的井字棋棋盘">${board.map((value, index) => `<div class="gar-ttt-cell${winning.has(index) ? ' winning' : ''}${last === index ? ' latest' : ''}"><span class="${value === 2 ? 'o' : 'x'}">${value === 1 ? 'X' : value === 2 ? 'O' : ''}</span></div>`).join('')}</div>`;
 }
 
-function monopolyBoard(game) {
+function monopolyBoard(game, presentation) {
   const places = BOARD.map((tile, index) => {
     const owner = game.owners[index];
-    const occupants = game.players.map((player, number) => player.position === index ? `<b class="gar-token token-${number}">${number ? '2' : '1'}</b>` : '').join('');
-    const [row, column] = tilePositions[index];
-    return `<div class="gar-town-tile${owner === 0 || owner === 1 ? ` owner-${owner}` : ''}" style="grid-row:${row};grid-column:${column}"><img src="${TILE_ART[index]}" alt=""><span>${esc(tile.name)}</span><div class="gar-tokens">${occupants}</div></div>`;
+    const stepping = presentation?.phase === 'moving' && presentation.positions[game.turn] === index;
+    const origin = stepping ? stepOrigin(presentation.previousPosition, index) : null;
+    const occupants = game.players.map((player, number) => {
+      if ((presentation?.positions[number] ?? player.position) !== index) return '';
+      const avatar = monopolyAvatar(game.mode, number);
+      return `<b class="gar-token token-${number}${stepping && number === game.turn ? ' is-stepping' : ''}"${stepping && number === game.turn ? ` style="--step-from-x:${origin.x};--step-from-y:${origin.y}"` : ''}>${avatar ? `<img src="${avatar}" alt="">` : '2'}</b>`;
+    }).join('');
+    const [row, column] = BOARD_POSITIONS[index];
+    return `<div class="gar-town-tile${owner === 0 || owner === 1 ? ` owner-${owner}` : ''}${stepping ? ' is-travelling' : ''}" data-position="${index}" style="grid-row:${row};grid-column:${column}"><img src="${TILE_ART[index]}" alt=""><span>${esc(tile.name)}</span><div class="gar-tokens">${occupants}</div></div>`;
   }).join('');
-  const dice = Number.isInteger(game.dice) && game.dice >= 1 && game.dice <= 6 ? `<img src="${DICE_ART[game.dice - 1]}" alt="${game.dice} 点">` : '<span>✦</span>';
-  return `<div class="gar-town" role="img" aria-label="同步的大富翁棋盘"><div class="gar-town-center"><small>THE LITTLE TOWN</small><strong>芽团大富翁</strong><div class="gar-die">${dice}</div><span>第 ${esc(game.round)} / ${MAX_ROUNDS} 轮</span></div>${places}</div>`;
+  const face = presentation?.dice ?? game.dice;
+  const dice = Number.isInteger(face) && face >= 1 && face <= 6 ? `<img src="${DICE_ART[face - 1]}" alt="${face} 点">` : '<span>✦</span>';
+  return `<div class="gar-town" role="img" aria-label="同步的大富翁棋盘"><div class="gar-town-center"><small>THE LITTLE TOWN</small><strong>芽团大富翁</strong><div class="gar-die${presentation?.phase === 'rolling' ? ' is-rolling' : ''}">${dice}</div><span>第 ${esc(game.round)} / ${MAX_ROUNDS} 轮</span></div>${places}</div>`;
 }
 
 function chessView(kind, snapshot) {
@@ -71,12 +78,21 @@ function chessView(kind, snapshot) {
 function monopolyView(snapshot) {
   const candidate = snapshot?.kind === 'monopoly' ? snapshot.game : null;
   const game = candidate && Array.isArray(candidate.players) && candidate.players.length === 2 && Array.isArray(candidate.owners) && candidate.owners.length === BOARD.length ? candidate : createMonopolyGame();
+  const presentation = validRollPresentation(snapshot?.presentation, game) ? snapshot.presentation : null;
   const player = game.players[game.turn] || game.players[0];
-  const status = game.phase === 'ended' && game.result ? game.result.winner === null ? '平分秋色' : `${game.players[game.result.winner]?.name || '伙伴'}获胜` : `轮到${player.name}`;
-  const players = game.players.map((p, index) => `<div class="gar-player player-${index}${game.turn === index && game.phase !== 'ended' ? ' current' : ''}"><span>${index + 1}</span><strong>${esc(p.name)}</strong><b>${money(p.money)}</b></div>`).join('');
+  const status = presentation?.phase === 'rolling' ? `${player.name}正在掷骰子`
+    : presentation?.phase === 'showing' ? `掷出了 ${presentation.dice} 点`
+      : presentation?.phase === 'moving' ? `${player.name}正在前进`
+        : game.phase === 'ended' && game.result ? game.result.winner === null ? '平分秋色' : `${game.players[game.result.winner]?.name || '伙伴'}获胜` : `轮到${player.name}`;
+  const players = game.players.map((p, index) => {
+    const avatar = monopolyAvatar(game.mode, index);
+    return `<div class="gar-player player-${index}${game.turn === index && game.phase !== 'ended' ? ' current' : ''}"><span aria-hidden="true">${avatar ? `<img src="${avatar}" alt="">` : '2'}</span><strong>${esc(p.name)}</strong><b>${money(p.money)}</b></div>`;
+  }).join('');
   const card = snapshot?.lastCard;
-  const detail = card?.title ? `${card.title} · ${card.description || ''}` : game.history?.at(-1) || '掷骰子，开始小镇旅行。';
-  return { board: monopolyBoard(game), status, meta: players, detail: String(detail).slice(0, 100), players: true };
+  const detail = presentation?.phase === 'moving' ? `第 ${presentation.step} / ${presentation.dice} 步`
+    : presentation ? '骰子和棋盘正在同步。'
+      : card?.title ? `${card.title} · ${card.description || ''}` : game.history?.at(-1) || '掷骰子，开始小镇旅行。';
+  return { board: monopolyBoard(game, presentation), status, meta: players, detail: String(detail).slice(0, 100), players: true };
 }
 
 /** Render a read-only snapshot. Room state is never interpreted as HTML. */
