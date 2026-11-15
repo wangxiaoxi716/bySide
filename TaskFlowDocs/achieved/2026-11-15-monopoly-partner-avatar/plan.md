@@ -1,6 +1,6 @@
 # Plan — 大富翁双人模式伙伴头像
 > Task version: v1
-> Status: checking
+> Status: completed
 
 No spec required — 仅为现有角色映射添加静态图片，不更改游戏状态或窗口协议。
 

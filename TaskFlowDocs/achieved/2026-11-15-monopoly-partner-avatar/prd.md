@@ -1,6 +1,6 @@
 # 大富翁双人模式伙伴头像
 > Task version: v1
-> Status: checking
+> Status: completed
 
 ## Goal
 为大富翁双人模式里的「伙伴」生成独立头像，并替换原有的「友」字标记。
