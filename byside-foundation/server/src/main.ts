@@ -43,7 +43,8 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, document);
   attachSpeechSocket(app.getHttpServer(), createRealtimeServer(app.get(Store), {
     chat: (messages, signal) => app.get(ModelService).chat(messages, signal, 2200),
-    visionConfigured: () => Boolean(process.env.YATUAN_AI_KEY && process.env.YATUAN_AI_ENDPOINT && process.env.YATUAN_AI_MODEL),
+    visionChat: (messages, signal) => app.get(ModelService).vision(messages, signal, 2200),
+    visionConfigured: () => Boolean(process.env.YATUAN_AI_KEY && process.env.YATUAN_AI_ENDPOINT && (process.env.YATUAN_VISION_MODEL || process.env.YATUAN_AI_MODEL)),
   }));
   await app.listen(Number(process.env.PORT || 4173), process.env.HOST || '127.0.0.1');
   console.log(`bySide 已启动 http://${process.env.HOST || '127.0.0.1'}:${process.env.PORT || 4173}`);

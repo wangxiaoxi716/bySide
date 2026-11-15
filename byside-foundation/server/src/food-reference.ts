@@ -8,7 +8,7 @@ export interface FoodReference {
   allergens?: string[];
 }
 
-type Food = { name: string; certain: boolean };
+type Food = { name: string; certain: boolean; visualCertain?: boolean };
 
 const cake: FoodReference = {
   product: '优乐麦干烙蛋糕（恋奶味）', source: 'user-supplied-package-photo', basis: 'per-100g',
@@ -39,7 +39,7 @@ export function matchFoodReferences(description: string, foods: Food[], demo = f
     for (const [ref, pattern] of [[cake, /饼干|曲奇|蛋糕|糕点/], [sausage, /火腿|香肠|烤肠|热狗肠/]] as const) {
       if (results.includes(ref)) continue;
       const matches = foods.filter(food => pattern.test(food.name));
-      if (matches.length) results.push({ ...ref, matchBasis: 'user-specified-test', visualCertainty: matches.some(food => food.certain) ? 'confirmed' : 'uncertain' });
+      if (matches.length) results.push({ ...ref, matchBasis: 'user-specified-test', visualCertainty: matches.some(food => food.visualCertain ?? food.certain) ? 'confirmed' : 'uncertain' });
     }
   }
   return results;

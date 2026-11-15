@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
 import WebSocket, { WebSocketServer, RawData } from 'ws';
 import type { Store } from './modules';
-import { analyzeDesktop, DesktopVisionSession, desktopTool, desktopInstructions, DESKTOP_TOOL_NAME, type DesktopChat } from './desktop-vision';
+import { analyzeDesktop, DesktopVisionSession, desktopTool, desktopInstructions, desktopObservationFailure, DESKTOP_TOOL_NAME, type DesktopChat } from './desktop-vision';
 
 const OPEN = WebSocket.OPEN;
 const keyConfigured = () => process.env.VOLC_REALTIME_API_KEY || process.env.VOLC_SPEECH_API_KEY || process.env.VOLC_API_KEY;
@@ -43,7 +43,7 @@ async function sessionPayload(db: Store, tools: any[]) {
 }
 
 /** A single local client owns realtime audio; the provider credential stays server-side. */
-export function createRealtimeServer(db: Store, options?: { chat: DesktopChat; visionConfigured: () => boolean }): WebSocketServer {
+export function createRealtimeServer(db: Store, options?: { chat: DesktopChat; visionChat?: DesktopChat; visionConfigured: () => boolean }): WebSocketServer {
   const bridge = new WebSocketServer({ noServer: true, maxPayload: 800000 });
   let owner: WebSocket | undefined;
   bridge.on('connection', browser => {
@@ -115,7 +115,7 @@ export function createRealtimeServer(db: Store, options?: { chat: DesktopChat; v
           if (tools.some(tool => tool.name === DESKTOP_TOOL_NAME) || tools.length >= 12) { fail('invalid-tools', '桌面观察工具名已被占用或工具数量过多'); return; }
           tools.push(desktopTool);
           vision = new DesktopVisionSession({
-            analyze: (image, question, signal) => analyzeDesktop(options.chat, image, question, signal),
+            analyze: (image, question, signal) => analyzeDesktop(options.visionChat || options.chat, image, question, signal),
             emit,
             onObservation: observation => {
               if (closing) return;
@@ -131,7 +131,7 @@ export function createRealtimeServer(db: Store, options?: { chat: DesktopChat; v
         if (address.protocol !== 'wss:' && !(address.protocol === 'ws:' && ['localhost', '127.0.0.1', '[::1]'].includes(address.hostname))) { fail('configuration', '实时语音地址必须使用安全连接'); return; }
         void sessionPayload(db, tools).then(payload => {
           if (closing) return;
-          baseInstructions = payload.session.instructions + (vision ? desktopInstructions : '');
+          baseInstructions = payload.session.instructions + (vision ? desktopInstructions() : '');
           payload.session.instructions = baseInstructions;
           sessionConfig = payload.session;
           upstream = new WebSocket(url, { headers: { 'X-Api-Key': key }, handshakeTimeout: 15000, maxPayload: 1024 * 1024 });
@@ -177,7 +177,11 @@ export function createRealtimeServer(db: Store, options?: { chat: DesktopChat; v
                   completedVisionCalls.add(item.call_id);
                   let question = '请描述当前桌面上的物品和食物。';
                   try { const args = JSON.parse(item.arguments); if (typeof args.question === 'string') question = args.question.slice(0, 500); } catch {}
-                  void vision.observe(question).then(result => ({ available: true, ...result })).catch(() => ({ available: false, message: '当前桌面画面不可用，请说明暂时看不到并让用户检查摄像头。' })).then(output => {
+                  void vision.observe(question).then(result => ({ available: true, ...result })).catch(error => {
+                    const failure = desktopObservationFailure(error);
+                    if (!closing) emit({ type: 'vision.error', message: failure.message });
+                    return failure;
+                  }).then(output => {
                     if (!closing) sendProvider({ type: 'conversation.item.create', items: [{ type: 'message', role: 'tool', call_id: item.call_id, content: [{ type: 'input_text', text: JSON.stringify(output) }] }] });
                   });
                 } else { pendingCalls.add(item.call_id); external.push(item); }
@@ -205,9 +209,9 @@ export function createRealtimeServer(db: Store, options?: { chat: DesktopChat; v
         void (async () => {
           await db.voiceUser(id, content); emit({ type: 'transcript.final', text: content });
           let observation: unknown = null;
-          if (vision) { try { observation = await vision.observe(content); } catch { observation = { available: false }; } }
+          if (vision) { try { observation = await vision.observe(content); } catch (error) { observation = desktopObservationFailure(error); } }
           const snapshot = await db.snapshot();
-          const answer = await options.chat([{ role: 'system', content: `${baseInstructions}\n本次文字问题已由后端查询桌面工具，直接结合下列观察数据简短回答。\n${JSON.stringify(observation)}。画面不可用时明确说明。` }, ...snapshot.messages.slice(-12).map(message => ({ role: message.role, content: message.text }))], abort.signal);
+          const answer = await options.chat([{ role: 'system', content: `${baseInstructions}\n本次文字问题已由后端查询桌面工具，直接结合下列观察数据简短回答。\n${JSON.stringify(observation)}。观察不可用时按返回的原因说明。` }, ...snapshot.messages.slice(-12).map(message => ({ role: message.role, content: message.text }))], abort.signal);
           if (closing || abort.signal.aborted) return;
           replyId = `realtime-assistant-${connectionId}-typed-${sequence}`; replyUser = id; replyText = answer; replyRecorded = false; recordReply();
           emit({ type: 'assistant.text.done', text: answer });
