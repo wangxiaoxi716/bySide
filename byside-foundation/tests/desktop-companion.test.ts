@@ -19,6 +19,28 @@ test('desktop camera releases its lock on permission denial', async () => {
   assert.equal(held, false);
 });
 
+test('shared-only capture leaves the camera available for AR when no source is connected', async () => {
+  let opened = 0, locked = 0;
+  const camera = createDesktopCamera({ sharedFrame: async () => null, startCamera: async () => { opened++; }, stopCamera() {}, locks: { request: async () => { locked++; } } });
+  await assert.rejects(camera.start({}, '', { sharedOnly: true }), /AR 摄像头/);
+  camera.stop();
+  assert.equal(opened, 0); assert.equal(locked, 0);
+});
+
+test('audio-only companion starts without camera access or visual commands', async () => {
+  let opened = 0, options: any;
+  const commands: any[] = [];
+  const controller = createDesktopCompanion({ config: () => ({ intervalSeconds: 10 }), stopDemo() {},
+    createCamera: () => { opened++; throw new Error('camera should remain unused'); },
+    createVoice: (value: any) => { options = value; return { start: async () => { value.onReady(); return true; }, stop: async () => {}, send: (command: any) => { commands.push(command); return true; } }; },
+  });
+  assert.equal(await controller.start({}, { desktopVision: false }), true);
+  assert.equal(options.desktopVision, false); assert.equal(opened, 0);
+  controller.pauseObservation(); await controller.wake();
+  assert.equal(commands.length, 0);
+  await controller.stop();
+});
+
 test('desktop companion sends audio and camera commands through one session and cleans up on disconnect', async () => {
   let callbacks: any, cameraStops = 0, voiceStops = 0;
   const commands: any[] = [];

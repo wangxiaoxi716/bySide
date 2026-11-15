@@ -68,6 +68,54 @@ document.querySelector('#projection-fullscreen').onclick = async () => {
 
 const liveUI=mountLiveUI();
 overlay=mountCameraOverlay({root,liveUI,restoreProjection:()=>render(getState())});
+const voiceButton = document.querySelector('#projection-voice');
+const voiceStatus = document.querySelector('#projection-voice-status');
+let voiceStarting = false, voiceStopping = false, voiceOperation = 0, voiceNotice = '', waitingForCamera = false;
+
+function resumeArObservation(status) {
+  const camera = document.querySelector('#projection-camera').srcObject;
+  if (!waitingForCamera || !status.active || !status.visionEnabled || status.observing || status.voiceState !== 'listening' || !camera?.getVideoTracks().some(track => track.readyState === 'live')) return;
+  waitingForCamera = false;
+  queueMicrotask(() => { void liveUI.controller.wake(); });
+}
+function renderVoiceControl(status = liveUI.controller.getStatus()) {
+  const active = voiceStarting || status.active;
+  voiceButton.disabled = voiceStopping;
+  voiceButton.textContent = voiceStopping ? '正在结束…' : active ? '结束实时语音' : '开始实时语音';
+  voiceButton.setAttribute('aria-pressed', String(active));
+  const messages = { starting: '正在连接…', listening: status.observing ? '正在听你说话 · 桌面观察已开启' : '正在听你说话', thinking: '正在思考…', speaking: '芽团正在回应…', stopping: '正在结束…' };
+  if (voiceStopping) voiceStatus.textContent = '正在结束…';
+  else if (voiceStarting && !status.active) voiceStatus.textContent = '正在连接…';
+  else if (status.active) {
+    const connected = ['listening', 'thinking', 'speaking'].includes(status.voiceState);
+    if (status.error) voiceStatus.textContent = status.error;
+    else if (status.voiceWarning) voiceStatus.textContent = connected ? `语音已连接。${status.voiceWarning}` : status.voiceWarning;
+    else voiceStatus.textContent = messages[status.voiceState] || '正在连接…';
+  }
+  else voiceStatus.textContent = voiceNotice || status.error || '可结合桌面画面';
+  if (status.observing || (!status.active && !voiceStarting)) waitingForCamera = false;
+  resumeArObservation(status);
+}
+liveUI.controller.subscribe(renderVoiceControl);
+window.addEventListener('yatuan:ar-camera-ready', () => resumeArObservation(liveUI.controller.getStatus()));
+voiceButton.addEventListener('click', async () => {
+  if (voiceStopping) return;
+  if (voiceStarting || liveUI.controller.getStatus().active) {
+    voiceOperation++; voiceStarting = false; voiceStopping = true; waitingForCamera = false; voiceNotice = '';
+    renderVoiceControl();
+    try { await liveUI.stopDirect(); }
+    finally { voiceStopping = false; renderVoiceControl(); }
+    return;
+  }
+  const operation = ++voiceOperation;
+  voiceStarting = true; waitingForCamera = true; voiceNotice = '';
+  renderVoiceControl();
+  try { await liveUI.startDirect(); }
+  catch (error) { if (operation === voiceOperation && error.name !== 'AbortError') voiceNotice = error.message || '实时语音暂时不可用。'; }
+  finally {
+    if (operation === voiceOperation) { voiceStarting = false; renderVoiceControl(); }
+  }
+});
 window.name = GAME_AR_WINDOW;
 const gameHost = document.createElement('div');
 gameHost.className = 'gar-root';

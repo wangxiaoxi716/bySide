@@ -7,14 +7,16 @@ import { stopDemo } from './demo.js';
 export function createDesktopCompanion(overrides = {}) {
   const io = { createVoice: createRealtimeVoiceSession, createCamera: createDesktopCamera, config: getLiveConfig, stopDemo, ...overrides };
   const listeners = new Set();
-  const initial = () => ({ active: false, localOwner: false, mode: 'idle', voiceState: 'idle', voiceWarning: '', error: '', message: '开始后，可以一边说话，一边让芽团看看桌面。', frameCount: 0, requestCount: 0, lastFrameAt: 0, observation: '', foods: [], previewImage: '', sourceLabel: '', shared: false, observing: false });
+  const initial = () => ({ active: false, localOwner: false, mode: 'idle', voiceState: 'idle', voiceWarning: '', error: '', message: '开始后，可以一边说话，一边让芽团看看桌面。', frameCount: 0, requestCount: 0, lastFrameAt: 0, observation: '', foods: [], previewImage: '', sourceLabel: '', shared: false, observing: false, visionEnabled: true });
   let status = initial(), voice, camera, video, timer, ready = false, generation = 0, captureTask, stopping = Promise.resolve();
+  let cameraId, sharedCameraOnly = false, visionEnabled = true;
   const snapshot = () => ({ ...status, foods: status.foods.map(food => ({ ...food })) });
   function emit(patch) {
     status = { ...status, ...patch };
     for (const listener of listeners) listener(snapshot());
   }
   function listeningMessage() {
+    if (!visionEnabled) return '正在听你说话。';
     return status.observing ? '正在听你说话，也在观察桌面。可以问“桌上有什么食物？”' : '仍在听你说话。点击“继续观察”可以恢复摄像头。';
   }
   function clearCamera() {
@@ -54,7 +56,7 @@ export function createDesktopCompanion(overrides = {}) {
   async function openCamera() {
     const token = generation, currentCamera = io.createCamera(); camera = currentCamera;
     try {
-      const frame = await currentCamera.start(video, io.config().cameraId);
+      const frame = await currentCamera.start(video, cameraId ?? io.config().cameraId, { sharedOnly: sharedCameraOnly });
       if (token !== generation || camera !== currentCamera) { currentCamera.stop(); return; }
       emit({ observing: true, shared: frame.shared, previewImage: frame.shared ? frame.image : '', sourceLabel: frame.label, voiceWarning: '' });
       return frame;
@@ -66,21 +68,21 @@ export function createDesktopCompanion(overrides = {}) {
       }
     }
   }
-  async function start(element, { fullDuplex = false } = {}) {
+  async function start(element, { fullDuplex = false, cameraId: selectedCameraId, sharedCameraOnly: sharedOnly = false, desktopVision = true } = {}) {
     if (status.active) return true;
-    const token = ++generation; video = element; io.stopDemo();
-    emit({ ...initial(), active: true, localOwner: true, mode: 'starting', message: '正在连接桌面摄像头和豆包实时语音…' });
+    const token = ++generation; video = element; cameraId = selectedCameraId; sharedCameraOnly = sharedOnly; visionEnabled = desktopVision; io.stopDemo();
+    emit({ ...initial(), active: true, localOwner: true, visionEnabled, mode: 'starting', message: visionEnabled ? '正在连接桌面摄像头和豆包实时语音…' : '正在连接豆包实时语音…' });
     await stopping;
     if (token !== generation) return false;
-    const firstFrame = await openCamera();
+    const firstFrame = visionEnabled ? await openCamera() : undefined;
     if (token !== generation) return false;
     voice = io.createVoice({
-      desktopVision: true, fullDuplex,
+      desktopVision: visionEnabled, fullDuplex,
       onReady() {
         if (token !== generation) return;
         ready = true;
         if (status.observing) void sendFrame(undefined, firstFrame).finally(schedule);
-        else voice?.send({ type: 'vision.pause' });
+        else if (visionEnabled) voice?.send({ type: 'vision.pause' });
         emit({ mode: status.observing ? 'observing' : 'paused', message: listeningMessage() });
       },
       onState(value) {
@@ -110,12 +112,16 @@ export function createDesktopCompanion(overrides = {}) {
     return connected;
   }
   function pauseObservation() {
-    if (!status.active) return;
+    if (!status.active || !visionEnabled) return;
     voice?.send({ type: 'vision.pause' }); clearCamera();
     emit({ mode: 'paused', message: listeningMessage() });
   }
   async function wake(text = '') {
     if (!status.active || !ready) return;
+    if (!visionEnabled) {
+      emit({ voiceWarning: '配置视觉模型后重新开始陪伴，即可观察桌面。' });
+      return;
+    }
     if (!status.observing) {
       const frame = await openCamera();
       if (!frame || !status.active || !ready) return;
