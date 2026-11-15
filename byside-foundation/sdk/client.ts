@@ -17,10 +17,16 @@ export interface Snapshot { companion: Companion; messages: ChatMessage[]; memor
 export interface FoundationEvent<T = unknown> { id: number; type: EventType; data: T }
 export interface GrowthResult { duplicate: boolean; companion?: Companion }
 export interface RealtimeTool { type: 'function'; name: string; description: string; parameters: Record<string, unknown> }
+export interface FoodReference {
+  product: string; source: 'user-supplied-package-photo'; basis: 'per-100g';
+  nutrients: { energyKj: number; proteinG: number; fatG: number; saturatedFatG: number; carbohydrateG: number; sugarG: number; sodiumMg: number };
+  allergens?: string[];
+}
 export interface DesktopObservation {
   description: string; foodPresent: boolean;
   foods: { name: string; group: string; certain: boolean }[];
   observedAt: string;
+  foodReferences?: FoodReference[];
 }
 export type RealtimeCommand =
   | { type: 'session.start'; fullDuplex?: boolean; desktopVision?: boolean; tools?: RealtimeTool[] }
