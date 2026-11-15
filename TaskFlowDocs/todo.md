@@ -59,3 +59,17 @@
 - Goal: 为大富翁增加骰子转动和棋子逐格行走动画，并同步到投影
 - Task: `TaskFlowDocs/achieved/2026-11-15-monopoly-movement/`
 - Next action: None — completed and archived.
+
+## 大富翁已购买房间以头像和颜色醒目标识归属
+
+- ID: TF-20261115-7ae0d9
+- Status: in_progress
+- Priority: normal
+- Owner: Unknown
+- Source: 用户请求
+- Kind: capability
+- Added: 2026-11-15
+- Updated: 2026-11-15
+- Goal: 大富翁已购买房间以头像和颜色醒目标识归属
+- Task: `TaskFlowDocs/2026-11-15-monopoly-property-owner/`
+- Next action: 发起 PR，等待用户查看房主标识。

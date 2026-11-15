@@ -23,3 +23,12 @@ export function monopolyAvatar(mode, playerIndex) {
   if (playerIndex === 1 && mode === 'local') return PLAYER_AVATARS.partner;
   return null;
 }
+
+// A house-shaped portrait is an ownership marker; the round portraits are pieces.
+export function monopolyOwnerBadge(mode, owner, projection = false) {
+  if (owner !== 0 && owner !== 1) return '';
+  const avatar = monopolyAvatar(mode, owner);
+  if (!avatar) return '';
+  const badge = projection ? 'gar-owner-badge' : 'mono-owner-badge';
+  return `<span class="${badge} owner-${owner}" aria-hidden="true"><svg viewBox="0 0 48 54" focusable="false"><path d="M3 20 24 3l21 17v30H3Z" fill="currentColor" stroke="#fffef8" stroke-width="2" stroke-linejoin="round"/></svg><img src="${avatar}" alt="" width="96" height="96"></span>`;
+}

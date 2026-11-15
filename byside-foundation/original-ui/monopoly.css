@@ -18,7 +18,6 @@
 .mono-tile[data-group=garden]::before{background:#e9bc9e}.mono-tile[data-group=sky]::before{background:#b3c9cc}.mono-tile[data-group=sun]::before{background:#e5cb83}
 .mono-tile[data-kind=event]::before{background:#ddc7a0}.mono-tile[data-kind=start]::before{background:#819d6c}.mono-tile[data-kind=tax]::before{background:#dba882}.mono-tile[data-kind=rest]::before{background:#c8d5bb}
 .mono-tile strong{font-size:clamp(9px,1vw,12px);line-height:1.25;font-weight:600;color:#617450;overflow-wrap:anywhere}.mono-tile small{font-size:clamp(8px,.78vw,10px);line-height:1.2;color:#a0a995;margin-top:3px}
-.mono-tile .mono-owner{margin-top:auto;font-size:9px;color:#81966c;white-space:nowrap}.mono-tile .mono-owner.owner-1{color:#be856e}
 .mono-tokens{display:flex;gap:3px;position:absolute;right:5px;bottom:5px}.mono-token{width:21px;height:21px;border-radius:50%;display:grid;place-items:center;background:#688557;color:#fff;font-size:9px;font-weight:700;border:2px solid #fffef8;box-shadow:0 1px 3px #495b3f33}.mono-token.token-1{background:#ce9073}
 .monopoly-center{grid-area:2/2/5/5;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:12px;border:1px solid #dbe6d0;border-radius:11px;background:#f6f8ef;color:#667b55;min-width:0}
 .mono-center-mark{font-size:33px;color:#a7ba8f;line-height:1}.mono-center-kicker{font-size:8px;letter-spacing:.2em;color:#a5b69a;margin-top:7px}.monopoly-center h3{font-size:clamp(14px,1.5vw,20px);font-weight:600;margin-top:9px;color:#4c6640}
@@ -42,7 +41,7 @@
 .mono-card-numbers{display:flex;gap:12px;flex-wrap:wrap;margin:16px 0}.mono-card-numbers span{padding:10px 12px;background:#f2f5e9;border-radius:10px;font-size:11px;color:#718762}.mono-card-note{min-height:20px}.mono-dialog-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}.mono-info-dialog{width:min(480px,calc(100% - 30px));padding:26px}.mono-info-dialog ul{padding-left:18px;margin-top:10px}.mono-info-dialog .mono-dialog-actions{justify-content:flex-end}
 .monopoly-page [hidden],.ttt-view [hidden]{display:none!important}
 @media(max-width:1000px){.monopoly-layout{grid-template-columns:minmax(0,1fr) 250px;gap:14px}.monopoly-game{padding:16px}.mono-tile{padding:5px}.mono-token{width:17px;height:17px;font-size:8px}.mono-player{grid-template-columns:29px 1fr auto}.mono-player-avatar{width:28px;height:28px}}
-@media(max-width:700px){.monopoly-heading{margin:12px 0 20px}.monopoly-heading h1{font-size:27px}.monopoly-heading h1 br{display:block}.monopoly-heading p:not(.chess-eyebrow){font-size:11px}.monopoly-heading-mark{display:none}.monopoly-layout{grid-template-columns:1fr}.monopoly-game{padding:13px}.monopoly-board{padding:6px;gap:3px;margin-top:15px}.mono-tile{padding:4px 3px;border-radius:5px}.mono-tile::before{height:3px;margin-bottom:3px}.mono-tile strong{font-size:9px}.mono-tile small{font-size:8px}.mono-tile .mono-owner{font-size:8px}.mono-token{width:16px;height:16px;font-size:8px;border-width:1px}.mono-tokens{right:2px;bottom:2px;gap:1px}.monopoly-center{padding:5px}.mono-center-mark{font-size:21px}.mono-center-kicker{font-size:7px;margin-top:3px}.monopoly-center h3{font-size:14px;margin-top:5px}.monopoly-center #turn-detail{font-size:9px;line-height:1.4;margin:4px 0}.mono-die{height:31px;width:31px;font-size:18px;margin-bottom:6px;border-radius:8px}.monopoly-center .mono-primary,.monopoly-center .mono-secondary{font-size:10px;padding:8px 12px}.mono-board-status{font-size:9px;line-height:1.3;margin-top:5px;min-height:12px}.monopoly-board-foot{font-size:8px}.monopoly-side{grid-template-columns:1fr}.mono-preview-art{height:180px}.mono-dialog-layout{grid-template-columns:120px minmax(0,1fr);gap:15px}.mono-dialog{padding:14px}.mono-dialog-content h2{font-size:20px}.mono-card-numbers{gap:5px;margin:10px 0}.mono-card-numbers span{padding:7px;font-size:10px}.mono-dialog-actions{margin-top:10px}}
+@media(max-width:700px){.monopoly-heading{margin:12px 0 20px}.monopoly-heading h1{font-size:27px}.monopoly-heading h1 br{display:block}.monopoly-heading p:not(.chess-eyebrow){font-size:11px}.monopoly-heading-mark{display:none}.monopoly-layout{grid-template-columns:1fr}.monopoly-game{padding:13px}.monopoly-board{padding:6px;gap:3px;margin-top:15px}.mono-tile{padding:4px 3px;border-radius:5px}.mono-tile::before{height:3px;margin-bottom:3px}.mono-tile strong{font-size:9px}.mono-tile small{font-size:8px}.mono-token{width:16px;height:16px;font-size:8px;border-width:1px}.mono-tokens{right:2px;bottom:2px;gap:1px}.monopoly-center{padding:5px}.mono-center-mark{font-size:21px}.mono-center-kicker{font-size:7px;margin-top:3px}.monopoly-center h3{font-size:14px;margin-top:5px}.monopoly-center #turn-detail{font-size:9px;line-height:1.4;margin:4px 0}.mono-die{height:31px;width:31px;font-size:18px;margin-bottom:6px;border-radius:8px}.monopoly-center .mono-primary,.monopoly-center .mono-secondary{font-size:10px;padding:8px 12px}.mono-board-status{font-size:9px;line-height:1.3;margin-top:5px;min-height:12px}.monopoly-board-foot{font-size:8px}.monopoly-side{grid-template-columns:1fr}.mono-preview-art{height:180px}.mono-dialog-layout{grid-template-columns:120px minmax(0,1fr);gap:15px}.mono-dialog{padding:14px}.mono-dialog-content h2{font-size:20px}.mono-card-numbers{gap:5px;margin:10px 0}.mono-card-numbers span{padding:7px;font-size:10px}.mono-dialog-actions{margin-top:10px}}
 @media(max-width:350px){.game-switch a{padding-inline:12px}.mono-tile strong{font-size:8px}.mono-tile small{font-size:7px}.mono-center-kicker,.mono-board-status{display:none}.mono-dialog-layout{grid-template-columns:1fr}.mono-dialog-art{max-width:120px;max-height:160px}.monopoly-heading h1{font-size:24px}}
 @media(prefers-reduced-motion:reduce){.monopoly-page *{animation:none!important;transition:none!important}}
 /* Each stop has its own illustration; the label remains readable over it. */
@@ -52,11 +51,9 @@
 .mono-tile-info{position:absolute;inset:auto 0 0;display:flex;flex-direction:column;align-items:flex-start;padding:2px 4px;background:#fffef5ed;line-height:1.1}
 .mono-tile-info strong,.mono-tile-info small{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mono-tile-info strong{font-size:clamp(8px,.8vw,10px);color:#425b36}.mono-tile-info small{font-size:clamp(7px,.7vw,9px);margin-top:2px;color:#77856d}
-.mono-tile .mono-owner{position:absolute;top:7px;left:4px;margin:0;padding:2px 4px;border-radius:4px;background:#5f7d51ed;color:#fff;font-size:8px;line-height:1.2;z-index:3}
-.mono-tile .mono-owner.owner-1{background:#bc8069ed;color:#fff}
 .mono-tokens{top:6px;bottom:auto;z-index:3}
 .mono-die{width:54px;height:54px;overflow:hidden}.mono-die img{width:100%;height:100%;object-fit:cover;border-radius:inherit}
-@media(max-width:700px){.mono-tile{padding:0}.mono-tile::before{height:3px}.mono-tile-info{padding:2px 3px}.mono-tile .mono-owner{top:4px;left:2px;font-size:7px;padding:1px 2px}.mono-tokens{top:4px}.mono-die{width:38px;height:38px}}
+@media(max-width:700px){.mono-tile{padding:0}.mono-tile::before{height:3px}.mono-tile-info{padding:2px 3px}.mono-tokens{top:4px}.mono-die{width:38px;height:38px}}
 /* Generated player portraits are shared with the AR projection. */
 .mono-player{grid-template-columns:40px 1fr auto}
 .mono-player-avatar{width:38px;height:38px;overflow:hidden}
@@ -74,3 +71,15 @@
 @keyframes mono-step{0%{transform:translate(calc(var(--step-from-x) * var(--mono-step)),calc(var(--step-from-y) * var(--mono-step))) scale(.92)}50%{transform:translate(calc(var(--step-from-x) * var(--mono-step) / 2),calc(var(--step-from-y) * var(--mono-step) / 2 - 8px)) scale(1.08)}100%{transform:translate(0,0) scale(1)}}
 @keyframes mono-dice-roll{0%{transform:rotate(-12deg) scale(.93)}50%{transform:rotate(190deg) scale(1.08)}100%{transform:rotate(348deg) scale(.93)}}
 @media(max-width:700px){.monopoly-board{--mono-step:calc((100cqw - 12px) / 5 + 3px)}}
+
+/* House-shaped portraits and matching borders stay visible after the piece leaves. */
+.mono-tile[data-owner]::after{content:'';position:absolute;inset:0;border:4px solid #527c46;border-radius:inherit;z-index:2;pointer-events:none}
+.mono-tile[data-owner="1"]::after{border-color:#c47054}
+.mono-owner-badge{position:absolute;top:5px;left:5px;z-index:3;display:block;width:clamp(30px,7cqw,48px);height:clamp(35px,8cqw,55px);color:#527c46;filter:drop-shadow(0 2px 2px #263b294d)}
+.mono-owner-badge.owner-1{color:#c47054}
+.mono-owner-badge svg{display:block;width:100%;height:100%}
+.mono-owner-badge img{position:absolute;left:18%;bottom:9%;display:block;width:64%;height:auto;aspect-ratio:1;object-fit:cover;border:2px solid #fffef8;border-radius:50%;box-sizing:border-box}
+.mono-player:nth-child(1) .mono-player-avatar{box-shadow:0 0 0 3px #527c46}
+.mono-player:nth-child(2) .mono-player-avatar{box-shadow:0 0 0 3px #c47054}
+.monopoly-board-foot{font-size:10px;color:#718466}
+@media(max-width:430px){.mono-tile[data-owner]::after{border-width:3px}.mono-owner-badge{top:3px;left:3px;width:26px;height:31px}.mono-owner-badge img{border-width:1px}}
