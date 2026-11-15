@@ -8,7 +8,7 @@ const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const MAX_BODY_BYTES = 2 * 1024 * 1024;
 const ENV_KEYS = new Set(['YATUAN_AI_ENDPOINT', 'YATUAN_AI_MODEL', 'YATUAN_AI_KEY', 'YATUAN_TTS_KEY']);
 const TTS_MAX_AUDIO_BYTES = 5 * 1024 * 1024;
-const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.gif': 'image/gif', '.ico': 'image/x-icon', '.woff2': 'font/woff2', '.mp4': 'video/mp4', '.webm': 'video/webm' };
+const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.gif': 'image/gif', '.ico': 'image/x-icon', '.woff2': 'font/woff2', '.mp4': 'video/mp4', '.webm': 'video/webm' };
 
 class RequestError extends Error {
   constructor(status, message, code = 'invalid_request') { super(message); this.status = status; this.code = code; }

@@ -45,20 +45,20 @@ async function harness(run) {
   }
 }
 
-test('36-second demonstration advances through six steps without saving user records', async () => {
+test('18-second demonstration advances through six steps without saving user records', async () => {
   await harness(({ api, store, advance, timers }) => {
     assert.equal(api.DEMO_STEPS.length, 6);
-    assert.ok(api.DEMO_STEPS.every(step => step.duration === 6000));
+    assert.ok(api.DEMO_STEPS.every(step => step.duration === 3000));
     api.startDemo();
     assert.equal(store.getState().growthStage, 0);
     for (let index = 1; index < 6; index++) {
-      advance(6000);
+      advance(3000);
       assert.equal(api.getDemoState().index, index);
       assert.match(store.getState().speech, /演示/);
     }
     assert.equal(store.getState().growthStage, 3);
-    assert.equal(store.getState().flowerCount, 3);
-    advance(6000);
+    assert.equal(store.getState().flowerCount, 1);
+    advance(3000);
     assert.deepEqual(api.getDemoState(), { running: false, paused: false, index: 5, progress: 1, done: true });
     assert.equal(timers.size, 0);
     assert.equal(store.getState().character, 'human');
@@ -66,7 +66,7 @@ test('36-second demonstration advances through six steps without saving user rec
     assert.deepEqual(store.getState().meals, initial.meals);
     assert.deepEqual(store.getState().memories, initial.memories);
     assert.equal(store.writes, 6, 'only writes when changing steps, never per timer tick');
-    assert.equal(store.getState().flowerCount, 3, 'completion holds final preview');
+    assert.equal(store.getState().flowerCount, 1, 'completion holds final preview');
   });
 });
 
@@ -82,7 +82,7 @@ test('pause and resume preserve elapsed time', async () => {
     advance(10000);
     assert.deepEqual(api.getDemoState(), paused);
     api.resumeDemo();
-    advance(3499);
+    advance(499);
     assert.equal(api.getDemoState().index, 0);
     advance(1);
     assert.equal(api.getDemoState().index, 1);
@@ -93,7 +93,7 @@ test('pause and resume preserve elapsed time', async () => {
 test('stop restores preview fields and preserves changes to genuine records and character', async () => {
   await harness(({ api, store, advance }) => {
     api.startDemo();
-    advance(24000);
+    advance(12000);
     store.updateState({ character: 'custom', customImage: 'data:test',
       chat: [...initial.chat, { id: 'new', text: '演示期间的新对话' }],
       memories: [...initial.memories, { id: 'new-memory', text: '新的偏好' }] });
@@ -119,7 +119,7 @@ test('manual steps can start paused, clamp boundaries, and resume to completion'
     api.goToStep(999);
     assert.equal(api.getDemoState().index, 5);
     api.resumeDemo();
-    advance(6000);
+    advance(3000);
     assert.equal(api.getDemoState().done, true);
     api.goToStep(-1);
     assert.equal(api.getDemoState().index, 0);
@@ -137,7 +137,7 @@ test('restarting does not replace the original snapshot and subscribers unsubscr
       state.index = 100;
     });
     api.startDemo();
-    advance(24000);
+    advance(12000);
     api.startDemo();
     assert.equal(api.getDemoState().index, 0);
     api.stopDemo();
@@ -214,7 +214,7 @@ test('new control pages handshake with the owner and forward pause, resume, step
   await multiTabHarness(async ({ load, store, flush, advance, timers }) => {
     const owner = await load();
     owner.startDemo();
-    advance(12000);
+    advance(6000);
     const mirror = await load();
     flush();
     assert.deepEqual(mirror.getDemoState(), owner.getDemoState());
@@ -254,7 +254,7 @@ test('closing mirrors preserves owner playback and finished demos can restart re
     flush();
     assert.equal(owner.getDemoState().running, true);
     assert.equal(timers.size, 1);
-    advance(36000);
+    advance(18000);
     assert.equal(owner.getDemoState().done, true);
     const nextMirror = await load();
     flush();
@@ -277,7 +277,7 @@ test('a remote reset following stop is not overwritten by delayed owner acknowle
   await multiTabHarness(async ({ load, store, flush, advance }) => {
     const owner = await load();
     owner.startDemo();
-    advance(24000);
+    advance(12000);
     const mirror = await load();
     flush();
     mirror.stopDemo();
@@ -299,7 +299,7 @@ test('simultaneous start commands settle on one timer without broadcast loops', 
     flush();
     assert.equal(Number(first.isDemoOwner()) + Number(second.isDemoOwner()), 1);
     assert.equal(timers.size, 1);
-    advance(6000);
+    advance(3000);
     assert.deepEqual(first.getDemoState(), second.getDemoState());
     assert.equal(first.getDemoState().index, 1);
   });

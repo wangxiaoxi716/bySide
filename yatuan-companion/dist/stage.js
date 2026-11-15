@@ -56,7 +56,9 @@ function flower(style, cls = '') {
 export function characterArt(state, {className = ''} = {}) {
     const asset = getMotionAsset(state);
     if (asset) {
-        const media = /\.(webm|mp4)$/.test(asset) ? `<video src="${esc(asset)}" autoplay loop muted playsinline aria-label="伙伴动作"></video>` : `<img src="${esc(asset)}" alt="伙伴动作">`;
+        const growthAnimation = state.character === 'yatuan' && [4, 5].includes(state.demoStep);
+        const label = growthAnimation ? state.demoStep === 4 ? '芽团长出花苞' : '芽团花朵绽放' : '伙伴动作';
+        const media = /\.(webm|mp4)$/.test(asset) ? `<video src="${esc(asset)}" autoplay loop muted playsinline aria-label="${label}"></video>` : `<img src="${esc(asset)}" alt="${label}">`;
         return `<div class="character animated-character ${className}">${media}</div>`;
     }
     const id = `pet-clip-${++serial}`;

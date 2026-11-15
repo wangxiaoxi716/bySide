@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
+import { fileURLToPath } from 'node:url';
 import os from 'node:os';
 import path from 'node:path';
 import { mkdtemp, mkdir, writeFile, symlink, rm } from 'node:fs/promises';
@@ -192,4 +193,14 @@ test('per-minute requests and concurrent upstream calls are bounded', async (t) 
   assert.equal((await concurrent.post()).status, 429);
   pending[0].end(JSON.stringify({ choices: [{ message: { content: '完成' } }] }));
   assert.equal((await first).status, 200);
+});
+
+
+test('AR modules are served with a JavaScript MIME type', async (t) => {
+  const app = await fixture(t, { configured: false, options: { distDir: fileURLToPath(new URL('../dist/', import.meta.url)) } });
+  for (const filename of ['camera-overlay.mjs', 'plane-geometry.mjs']) {
+    const response = await fetch(app.base + '/' + filename);
+    assert.equal(response.status, 200);
+    assert.match(response.headers.get('content-type'), /^text\/javascript/);
+  }
 });

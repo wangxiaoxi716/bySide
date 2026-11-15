@@ -29,6 +29,7 @@ import {getAIConfig, saveAIConfig, clearAIConfig, requestAI, isAIConfigured} fro
 import {
     DEMO_STEPS,
     getDemoState,
+    getDemoCharacterState,
     subscribeDemo,
     startDemo,
     pauseDemo,
@@ -38,6 +39,7 @@ import {
     isDemoOwner
 } from './demo.js';
 import {icon, esc, characterArt, characterName, stages} from './stage.js';
+import {getMotionAsset} from './animations.js';
 
 const app = document.querySelector('#app'), modal = document.querySelector('#modal'),
     modalContent = document.querySelector('#modal-content');
@@ -71,6 +73,7 @@ function statBars(s) {
 }
 
 function scene(s) {
+    s = getDemoCharacterState(s);
     return `<section class="scene-card ${s.activity === '用餐' ? 'is-meal' : ''}"><div class="scene-forest"><svg viewBox="445 196 754 142" preserveAspectRatio="none" aria-hidden="true"><image href="assets/design-reference.png" width="1536" height="1024"/></svg></div><div class="scene-ground"></div><div class="scene-top"><span class="scene-tag">${icon('home', 15)} 森林里的小家</span><button class="scene-icon" data-action="sound" aria-label="${s.sound ? '关闭' : '开启'}语音朗读">${icon(s.sound ? 'volume' : 'moon', 19)}</button></div><div class="scene-hello"><span>${characterName(s)}在这里</span><small>今天也，很高兴见到你。</small></div><div class="scene-speech" aria-live="polite">${esc(s.speech)}</div><div class="scene-rug"></div><div class="hero-character">${characterArt(s)}</div><div class="floating-leaf leaf-one">${icon('leaf', 24)}</div><div class="floating-leaf leaf-two">${icon('leaf', 17)}</div>${s.activity === '用餐' && !liveUI?.controller.getStatus().active ? '<div class="scene-meal-card"><svg viewBox="1244 451 233 109" aria-hidden="true"><image href="assets/design-reference.png" width="1536" height="1024"/></svg><small>示例餐食 · 一起开饭</small></div>' : ''}<div class="scene-bottom"><span><i></i>${moodNames[s.mood]} · ${s.activity === '用餐' ? '陪你吃饭' : '陪在你身边'}</span><button data-action="characters">切换形象 ${icon('chevron', 14)}</button></div></section>`;
 }
 
@@ -84,6 +87,7 @@ function demoPanel() {
 }
 
 function home(s) {
+    s = getDemoCharacterState(s);
     return `${header('今天，也一起慢慢长大。', '不用赶路的时候，就在这里坐一会儿。', `<button class="companion-day" data-action="growth">${icon('sprout', 25)}<span>相伴的第 <b>${Math.max(1, Math.floor((Date.now() - s.createdAt) / 86400000) + 1)}</b> 天<small>${stages[s.growthStage]}</small></span></button>`)}<div class="home-grid"><div class="home-left">${scene(s)}${demoPanel()}</div><aside class="home-right"><section class="card wellbeing-card"><div class="card-heading"><div><h2>小小的成长</h2></div><button class="text-btn" data-action="growth">去花园 ${icon('chevron', 14)}</button></div>${statBars(s)}<div class="growth-caption">${icon('sprout', 14)} 每一份陪伴，都被好好留下。</div></section>${chatCard(s)}</aside></div><section class="home-bottom"><div class="section-title"><h2>在桌边，还可以一起…</h2><a href="#activities">探索更多 ${icon('arrow', 15)}</a></div><div class="activity-preview"><button data-action="meals" class="activity-tile meal"><span class="activity-illustration">${icon('bowl', 34)}</span><div><strong>好好吃一顿饭</strong><small>小碗已经准备好啦</small></div>${icon('arrow', 19)}</button><button data-action="coming-chess" class="activity-tile chess"><span class="activity-illustration chess-board"><i></i><i></i></span><div><strong>下一盘慢慢的棋</strong><small>和芽团一起下棋</small></div>${icon('arrow', 19)}</button><button data-action="coming-craft" class="activity-tile craft"><span class="activity-illustration">${icon('spark', 34)}</span><div><strong>做点有趣的小东西</strong><small>敬请期待</small></div><span class="soon-dot">SOON</span></button></div></section>`;
 }
 
@@ -690,6 +694,23 @@ subscribeDemo(d => {
     }
     const bar = document.querySelector('.demo-progress i');
     if (bar) bar.style.width = d.progress * 100 + '%';
+    if (d.running || d.done) {
+        const visual = getDemoCharacterState(getState());
+        const hero = document.querySelector('.hero-character');
+        if (hero) {
+            if (hero.dataset.demoStep !== String(d.index)) {
+                hero.innerHTML = characterArt(visual);
+                hero.dataset.demoStep = String(d.index);
+                hero.dataset.motion = visual.motion;
+            } else {
+                const image = hero.querySelector('img');
+                const asset = getMotionAsset(visual);
+                if (image && image.getAttribute('src') !== asset) image.src = asset;
+            }
+        }
+        const name = document.querySelector('.scene-hello > span');
+        if (name) name.textContent = `${characterName(visual)}在这里`;
+    }
 });
 addEventListener('storage-warning', () => toast('浏览器暂时无法保存全部数据；当前页面仍可继续体验。'));
 addEventListener('pagehide', () => {

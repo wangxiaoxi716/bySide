@@ -4263,3 +4263,12 @@ input::placeholder, textarea::placeholder {
 .live-header-actions .icon-btn {
     margin-left: 2px
 }
+
+.scene-card:has(.hero-character img[src*="yatuan-growth-"]) .scene-speech {
+    top: 68px;
+    left: auto;
+    right: 22px;
+    min-width: 0;
+    max-width: 42%;
+    transform: none
+}

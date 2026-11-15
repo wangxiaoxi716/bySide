@@ -6,8 +6,8 @@ export const DEMO_STEPS = Object.freeze([
   Object.freeze({ title: '示例餐食出现', description: '演示餐食入场：展示米饭、青菜与豆腐的示例搭配。', duration: 3000 }),
   Object.freeze({ title: '确认食材', description: '演示确认步骤：模拟用户确认主食、蔬菜和蛋白质来源。', duration: 3000 }),
   Object.freeze({ title: '对话回应', description: '演示陪伴回应：小精灵陪你慢慢吃饭，叶片逐渐舒展。', duration: 3000 }),
-  Object.freeze({ title: '花苞', description: '演示成长加速：把长期积累压缩展示，头顶出现一颗花苞。', duration: 3000 }),
-  Object.freeze({ title: '多花绽放', description: '演示最终形态：三朵小花绽放，留下共同成长的想象。', duration: 3000 }),
+  Object.freeze({ title: '花苞', description: '叶片中央长出花苞，陪伴正在悄悄积累。', duration: 3000 }),
+  Object.freeze({ title: '花朵绽放', description: '花苞慢慢舒展，芽团的第一朵小花开了。', duration: 3000 }),
 ]);
 
 const STEPS = [
@@ -15,8 +15,8 @@ const STEPS = [
   { mood: 'eating', activity: '用餐', speech: '【演示】米饭、青菜和豆腐，小碗准备好啦。', energy: 68, intimacy: 14, growth: 26, growthStage: 0, flowerCount: 1 },
   { mood: 'listening', activity: '用餐', speech: '【演示】主食、蔬菜、蛋白质，这餐搭配挺丰富。', energy: 76, intimacy: 17, growth: 40, growthStage: 1, flowerCount: 1 },
   { mood: 'happy', activity: '陪伴', speech: '【演示】我陪你，慢慢吃。叶子也舒展开啦。', energy: 82, intimacy: 21, growth: 54, growthStage: 1, flowerCount: 1 },
-  { mood: 'curious', activity: '陪伴', speech: '【演示】看，一颗小花苞！', energy: 89, intimacy: 25, growth: 76, growthStage: 2, flowerCount: 1 },
-  { mood: 'happy', activity: '陪伴', speech: '【演示】三朵小花，是我们一起过的日子。', energy: 96, intimacy: 30, growth: 100, growthStage: 3, flowerCount: 3 },
+  { mood: 'curious', activity: '陪伴', speech: '【演示】看，叶子中间长出了一颗小花苞。', energy: 89, intimacy: 25, growth: 76, growthStage: 2, flowerCount: 1 },
+  { mood: 'happy', activity: '陪伴', speech: '【演示】小花开啦，这是我们一起长大的模样。', energy: 96, intimacy: 30, growth: 100, growthStage: 3, flowerCount: 1 },
 ];
 const RESTORE_FIELDS = Object.freeze(Object.keys(STEPS[0]));
 const TOTAL_DURATION = DEMO_STEPS.reduce((total, step) => total + step.duration, 0);
@@ -191,6 +191,16 @@ if (browser) {
 
 export function isDemoOwner() { return owner?.id === tabId; }
 export function getDemoState() { return { ...demo }; }
+export function getDemoCharacterState(state) {
+  if (!demo.running && !demo.done) return state;
+  const step = STEPS[demo.index];
+  const progress = Math.max(0, Math.min(1, (demo.progress * TOTAL_DURATION - stepStart(demo.index)) / DEMO_STEPS[demo.index].duration));
+  let growthFrame;
+  if (demo.index === 4) growthFrame = progress < 0.35 ? 5 : 6;
+  if (demo.index === 5) growthFrame = progress < 0.2 ? 6 : progress < 0.45 ? 7 : 8;
+  return { ...state, ...step, character: 'yatuan', motion: 'idle',
+    demoStep: demo.index, demoGrowthFrame: growthFrame };
+}
 export function subscribeDemo(listener) {
   if (typeof listener !== 'function') throw new TypeError('subscribeDemo expects a function');
   listeners.add(listener);
@@ -265,7 +275,9 @@ export function goToStep(index) {
   const wasPlaying = demo.running && !demo.paused;
   captureSnapshot();
   clearTimer();
-  elapsedBeforeRun = stepStart(nextIndex);
+  // A paused growth preview opens on the named shape. Playback still shows its transition.
+  const previewOffset = !wasPlaying && nextIndex >= 4 ? DEMO_STEPS[nextIndex].duration / 2 : 0;
+  elapsedBeforeRun = stepStart(nextIndex) + previewOffset;
   demo = { running: true, paused: !wasPlaying, index: nextIndex,
     progress: elapsedBeforeRun / TOTAL_DURATION, done: false };
   applyStep(nextIndex);
