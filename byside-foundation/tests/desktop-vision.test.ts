@@ -44,6 +44,28 @@ test('package references require a clear specific match and retain their per-100
   assert.equal((await inspect('优乐麦干烙蛋糕恋奶味。', '蛋糕', true, false)).foodReferences, undefined);
 });
 
+test('explicit biscuit and sausage demo references are limited to observed foods', async () => {
+  const previous = process.env.YATUAN_FOOD_DEMO;
+  const inspect = (foods: object[]) => analyzeDesktop(async () => JSON.stringify({ description: '盘中食物已拆包装，品牌无法辨认。', foodPresent: foods.length > 0, foods }), image, '盘子里有什么？', new AbortController().signal);
+  try {
+    const foods = [{ name: '饼干', group: '主食', certain: true }, { name: '火腿肠', group: '蛋白质', certain: true }];
+    delete process.env.YATUAN_FOOD_DEMO;
+    assert.equal((await inspect(foods)).foodReferences, undefined, 'unwrapped food never matches labels by default');
+    process.env.YATUAN_FOOD_DEMO = 'biscuit-sausage';
+    const result = await inspect(foods);
+    assert.deepEqual(result.foodReferences?.map(ref => ref.matchBasis), ['user-specified-test', 'user-specified-test']);
+    assert.deepEqual(result.foodReferences?.map(ref => ref.visualCertainty), ['confirmed', 'confirmed']);
+    assert.equal(result.foodReferences?.[0].nutrients.sugarG, 33.9);
+    assert.equal(result.foodReferences?.[1].nutrients.sodiumMg, 950);
+    assert.equal((await inspect([{ name: '苹果', group: '水果', certain: true }])).foodReferences, undefined);
+    assert.equal((await inspect([{ name: '饼干', group: '', certain: false }])).foodReferences?.[0].visualCertainty, 'uncertain');
+    assert.equal((await inspect([{ name: '棕色块状物', group: '', certain: false }])).foodReferences, undefined);
+    assert.equal((await inspect([])).foodReferences, undefined);
+  } finally {
+    if (previous === undefined) delete process.env.YATUAN_FOOD_DEMO; else process.env.YATUAN_FOOD_DEMO = previous;
+  }
+});
+
 test('desktop capture refresh, periodic throttling, and pause cancellation', async () => {
   const events: any[] = [], results: any[] = [];
   let calls = 0;

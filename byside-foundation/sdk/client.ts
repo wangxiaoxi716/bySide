@@ -19,6 +19,8 @@ export interface GrowthResult { duplicate: boolean; companion?: Companion }
 export interface RealtimeTool { type: 'function'; name: string; description: string; parameters: Record<string, unknown> }
 export interface FoodReference {
   product: string; source: 'user-supplied-package-photo'; basis: 'per-100g';
+  matchBasis?: 'user-specified-test';
+  visualCertainty?: 'confirmed' | 'uncertain';
   nutrients: { energyKj: number; proteinG: number; fatG: number; saturatedFatG: number; carbohydrateG: number; sugarG: number; sodiumMg: number };
   allergens?: string[];
 }
