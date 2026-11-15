@@ -139,7 +139,10 @@ function render() {
     const s = getState();
     const input = document.querySelector('#chat-input'), draft = input?.value || '',
         focused = document.activeElement === input;
-    document.querySelector('#main').innerHTML = ({home, meals, growth, memories, activities, chess}[view])(s);
+    const main = document.querySelector('#main');
+    if (view !== 'chess' || !main.querySelector('.chess-embed iframe')) {
+        main.innerHTML = ({home, meals, growth, memories, activities, chess}[view])(s);
+    }
     document.querySelectorAll('[data-nav]').forEach(el => el.classList.toggle('active', el.dataset.nav === view));
     document.querySelector('#page-label').textContent = nav.find(n => n[0] === view)[2];
     document.querySelector('#mode-label').textContent = isAIConfigured() ? 'AI 已连接' : '本地演示';
