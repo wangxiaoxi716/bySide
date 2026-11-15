@@ -1,16 +1,10 @@
 import { BOARD, EVENT_CARDS, MAX_ROUNDS, PASS_BONUS, START_BALANCE, createGame, scorePlayers, rollDice, decideProperty, acknowledgeEvent, endTurn, shouldBotBuy } from './monopoly-core.js';
+import { TILE_ART, DICE_ART } from './monopoly-assets.js';
 import { icon, esc } from './stage.js';
 
 const $ = selector => document.querySelector(selector);
-const diceFaces = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
 const positions = [[5,1],[5,2],[5,3],[5,4],[5,5],[4,5],[3,5],[2,5],[1,5],[1,4],[1,3],[1,2],[1,1],[2,1],[3,1],[4,1]];
-const art = { property: 'assets/monopoly/property-card.png', event: 'assets/monopoly/event-card.png' };
-const tileArt = [
-  '00-start', '01-mushroom', '02-mail', '03-bakery',
-  '04-rest', '05-post', '06-gift', '07-tea',
-  '08-festival', '09-bookshop', '10-clover', '11-inn',
-  '12-picnic', '13-farm', '14-treasure', '15-greenhouse',
-].map(name => `assets/monopoly/tiles/${name}.jpg`);
+const art = { property: 'assets/monopoly/property-card-web.jpg', event: 'assets/monopoly/event-card-web.jpg' };
 let game = createGame(), botTimer = null, epoch = 0, lastCard = null, resultShown = false, infoAction = null;
 
 document.querySelectorAll('[data-icon]').forEach(element => { element.innerHTML = icon(element.dataset.icon, 20); });
@@ -39,7 +33,7 @@ function renderBoard() {
     const detail = tile.type === 'property' ? `${tile.price} · 租 ${tile.rent}` : tile.detail || (tile.type === 'event' ? '抽取事件卡' : '');
     const playersText = playersHere.map(playerIndex => game.players[playerIndex].name).join('、');
     element.setAttribute('aria-label', `${tile.name}，${detail}${ownerText ? `，${ownerText}` : ''}${playersText ? `，${playersText}在这里` : ''}`);
-    element.innerHTML = `<img class="mono-tile-image" src="${tileArt[index]}" alt="" width="360" height="360"><div class="mono-tile-info"><strong>${esc(tile.name)}</strong><small>${esc(detail)}</small>${owner === null ? '' : `<span class="mono-owner owner-${owner}">${esc(game.players[owner].name)}的地产</span>`}</div><div class="mono-tokens" aria-hidden="true">${playersHere.map(playerIndex => `<span class="mono-token token-${playerIndex}">${playerIndex === 0 ? '我' : game.mode === 'solo' ? '芽' : '友'}</span>`).join('')}</div>`;
+    element.innerHTML = `<img class="mono-tile-image" src="${TILE_ART[index]}" alt="" width="360" height="360"><div class="mono-tile-info"><strong>${esc(tile.name)}</strong><small>${esc(detail)}</small></div>${owner === null ? '' : `<span class="mono-owner owner-${owner}">${esc(game.players[owner].name)}的</span>`}<div class="mono-tokens" aria-hidden="true">${playersHere.map(playerIndex => `<span class="mono-token token-${playerIndex}">${playerIndex === 0 ? '我' : game.mode === 'solo' ? '芽' : '友'}</span>`).join('')}</div>`;
   });
 }
 
@@ -75,7 +69,7 @@ function render() {
       : game.phase === 'event' ? isHuman ? '打开来信，看看发生了什么。' : '芽团收到了一封小镇来信。'
         : isHuman ? '这一步完成啦，可以结束回合。' : '芽团这一步走完啦。';
   $('#turn-detail').textContent = description;
-  $('#dice-display').textContent = game.dice ? diceFaces[game.dice - 1] : '✦';
+  $('#dice-display').innerHTML = game.dice ? `<img src="${DICE_ART[game.dice - 1]}" alt="" width="256" height="256">` : '✦';
   $('#dice-display').setAttribute('aria-label', game.dice ? `掷出 ${game.dice} 点` : '还未掷骰子');
   $('#roll-button').hidden = game.phase !== 'roll' || !isHuman;
   $('#next-button').hidden = game.phase !== 'turn-end' || !isHuman;

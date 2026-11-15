@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { TILE_ART, DICE_ART } from '../dist/monopoly-assets.js';
 import {
   BOARD, EVENT_CARDS, MAX_ROUNDS, PASS_BONUS, START_BALANCE,
   createGame, scorePlayers, rollDice, decideProperty, acknowledgeEvent, endTurn, shouldBotBuy,
@@ -159,4 +161,25 @@ test('all phases reject inappropriate transitions', () => {
   assert.equal(acknowledgeEvent(game), game);
   assert.equal(endTurn(game), game);
   assert.equal(rollDice(null), null);
+});
+
+test('every board space and every die face has its own loadable image', async () => {
+  assert.equal(TILE_ART.length, BOARD.length);
+  assert.equal(new Set(TILE_ART).size, BOARD.length);
+  assert.equal(DICE_ART.length, 6);
+  assert.equal(new Set(DICE_ART).size, 6);
+  for (const path of [...TILE_ART, ...DICE_ART]) {
+    const bytes = await readFile(new URL(`../dist/${path}`, import.meta.url));
+    assert.ok(bytes.length > 1000, `${path} is empty or incomplete`);
+    assert.equal(bytes[0], 0xff, `${path} must be a JPEG`);
+    assert.equal(bytes[1], 0xd8, `${path} must be a JPEG`);
+  }
+});
+
+test('each dice outcome selects the corresponding face image', () => {
+  for (let value = 1; value <= 6; value++) {
+    const state = rollDice(createGame(), () => (value - 0.5) / 6);
+    assert.equal(state.dice, value);
+    assert.equal(DICE_ART[state.dice - 1], `assets/monopoly/dice/die-${value}.jpg`);
+  }
 });

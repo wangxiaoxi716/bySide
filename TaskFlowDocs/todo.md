@@ -17,7 +17,7 @@
 ## 为芽团棋室开发大富翁游戏并生成卡片图片
 
 - ID: TF-20261115-83e19b
-- Status: promoted
+- Status: in_progress
 - Priority: normal
 - Owner: Unknown
 - Source: 用户请求
@@ -26,4 +26,4 @@
 - Updated: 2026-11-15
 - Goal: 为芽团棋室开发大富翁游戏并生成卡片图片
 - Task: `TaskFlowDocs/2026-11-15-yatuan-monopoly/`
-- Next action: Complete PRD / Spec / Plan and request approval.
+- Next action: 同步最新 main 并将大富翁提交至 zt，供用户查看。
