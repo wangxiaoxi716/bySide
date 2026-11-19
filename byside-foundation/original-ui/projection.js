@@ -23,9 +23,9 @@ function render(s) {
   const width = Math.max(1, Math.min(innerWidth || 1, viewport?.width || innerWidth || 1));
   const height = Math.max(1, Math.min(innerHeight || 1, viewport?.height || innerHeight || 1));
   const requestedScale = Number.isFinite(p.scale) && p.scale > 0 ? p.scale : 1;
-  const scale = Math.min(requestedScale, width / SCENE_WIDTH, height / SCENE_HEIGHT);
-  const offsetX = Number.isFinite(p.x) ? p.x : 0;
-  const offsetY = Number.isFinite(p.y) ? p.y : 0;
+  const scale = Math.min(width * 0.82 / SCENE_WIDTH, height * 0.78 / SCENE_HEIGHT) * Math.min(requestedScale, 1);
+  const offsetX = (width - SCENE_WIDTH * scale) / 2;
+  const offsetY = (height - SCENE_HEIGHT * scale) / 2;
   // Bounds must use the complete transformed scene, including its speech bubble.
   // On narrow/short screens, shrink first and then clamp the requested offsets.
   if (!overlay?.isActive()) {
@@ -109,7 +109,7 @@ function renderVoiceControl(status = liveUI.controller.getStatus()) {
     else if (status.voiceWarning) voiceStatus.textContent = connected ? `语音已连接。${status.voiceWarning}` : status.voiceWarning;
     else voiceStatus.textContent = messages[status.voiceState] || '正在连接…';
   }
-  else voiceStatus.textContent = voiceNotice || status.error || '可结合桌面画面';
+  else voiceStatus.textContent = voiceNotice || status.error || (overlay.isActive() ? '可结合桌面画面' : '');
   if (status.observing || (!status.active && !voiceStarting)) waitingForCamera = false;
   resumeArObservation(status);
 }
@@ -165,7 +165,6 @@ voiceGame = createVoiceGameController({ onChange(kind, snapshot) {
     gameHost.innerHTML = renderGameProjection({ game: kind, snapshot, connected: true });
     const caption = gameHost.querySelector('.gar-voice-caption');
     if (caption) caption.textContent = getState().speech;
-    if (!overlay.isActive()) void overlay.open(false);
   }
   overlay.render();
 } });
@@ -177,7 +176,6 @@ window.addEventListener('message', event => {
   if (event.origin !== location.origin || event.data?.type !== GAME_AR_MESSAGE || !validGameSelection(event.data)) return;
   voiceGame.discard();
   gameProjection.select(event.data);
-  if (!overlay.isActive()) overlay.open(false);
 });
 document.documentElement.dataset.gameArReady = '1';
 window.addEventListener('pagehide', () => gameProjection.clear(), { once: true });

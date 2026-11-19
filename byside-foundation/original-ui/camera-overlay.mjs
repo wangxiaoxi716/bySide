@@ -90,8 +90,8 @@ export function mountCameraOverlay({root, liveUI, restoreProjection}){
     }catch(err){clearTimeout(timeout);if(token===gen){stopCamera();const e=err;message(e?.name==='NotAllowedError'?'摄像头权限被拒绝，请在浏览器允许后重试。':e?.name==='NotFoundError'||e?.name==='OverconstrainedError'?'所选摄像头不在线，请接好 iPhone 后刷新设备列表。':e?.name==='NotReadableError'?'摄像头不可用，可能正被其他页面或应用占用。':(e?.message||'摄像头连接失败。'));if(fromAuto&&(e?.name==='NotFoundError'||e?.name==='OverconstrainedError')){autoWaiting=true;message('正在等待手机摄像头上线；请将 iPhone 锁屏并放在 Mac 附近。');}}}
     finally{starting=false;if(token===gen)begin.disabled=false;}
   }
-  function drawOriginalEffect(){
-    const video=document.querySelector('.projection-bg-video'),canvas=root.querySelector('.ar-original-effects');
+  function drawOriginalEffect(canvas=root.querySelector('.ar-original-effects')){
+    const video=document.querySelector('.projection-bg-video');
     if(!video||!canvas||video.readyState<2)return;
     const effect=canvas.getContext('2d',{willReadFrequently:true});
     try{effect.drawImage(video,0,0,canvas.width,canvas.height);const frame=effect.getImageData(0,0,canvas.width,canvas.height),data=frame.data;for(let i=0;i<data.length;i+=4){const light=Math.max(data[i],data[i+1],data[i+2]);data[i+3]=Math.min(255,Math.max(0,(light-8)*2.1));}effect.putImageData(frame,0,0);}catch{/* An unavailable decoration must not interrupt tracking. */}
@@ -135,11 +135,24 @@ export function mountCameraOverlay({root, liveUI, restoreProjection}){
     finally{temporary?.getTracks().forEach(t=>t.stop());}
   };
   begin.onclick=()=>start(false);select.addEventListener('change',()=>{autoWaiting=false;});$('#ar-calibrate').onclick=calibrate;$('#ar-stop').onclick=stopCamera;
-  function showBlack(){stopCamera();active=false;panel.hidden=true;document.body.classList.remove('ar-active');bg.hidden=true;root.hidden=false;$('#projection-ar').setAttribute('aria-pressed','false');$('#projection-black').setAttribute('aria-pressed','true');restoreProjection();}
+  let blackEffectFrame = 0;
+  const blackEffect = document.createElement('canvas');
+  blackEffect.className = 'black-projection-effects';
+  blackEffect.width = 510;
+  blackEffect.height = 300;
+  blackEffect.setAttribute('aria-hidden', 'true');
+  root.before(blackEffect);
+  function drawBlackEffect(now){
+    if(active)return;
+    if(now-lastEffect>=80){lastEffect=now;drawOriginalEffect(blackEffect);}
+    blackEffectFrame=requestAnimationFrame(drawBlackEffect);
+  }
+  function showBlack(){stopCamera();active=false;document.body.classList.remove('ar-active');bg.hidden=true;root.hidden=false;$('#projection-ar').setAttribute('aria-pressed','false');$('#projection-black').setAttribute('aria-pressed','true');restoreProjection();cancelAnimationFrame(blackEffectFrame);blackEffectFrame=requestAnimationFrame(drawBlackEffect);}
   $('#ar-close').onclick=showBlack;
   $('#projection-black').onclick=showBlack;
   async function openOverlay(autoConnect=false){
     if(active && (stream || starting))return;
+    cancelAnimationFrame(blackEffectFrame);
     active=true;panel.hidden=false;$('#projection-ar').setAttribute('aria-pressed','true');$('#projection-black').setAttribute('aria-pressed','false');document.body.classList.add('ar-active');bg.hidden=false;root.hidden=true;
     await devices();
     if(!active)return;

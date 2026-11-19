@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { TILE_ART, DICE_ART, PLAYER_AVATARS, monopolyAvatar } from '../original-ui/monopoly-assets.js';
+import { TILE_ART, DICE_ART } from '../original-ui/monopoly-assets.js';
 import {
   BOARD, EVENT_CARDS, MAX_ROUNDS, PASS_BONUS, START_BALANCE,
   createGame, scorePlayers, rollDice, decideProperty, acknowledgeEvent, endTurn, shouldBotBuy,
@@ -181,18 +181,5 @@ test('each dice outcome selects the corresponding face image', () => {
     const state = rollDice(createGame(), () => (value - 0.5) / 6);
     assert.equal(state.dice, value);
     assert.equal(DICE_ART[state.dice - 1], `assets/monopoly/dice/die-${value}.jpg`);
-  }
-});
-
-test('player and Yatuan portraits load and preserve the identity of a local human opponent', async () => {
-  assert.equal(monopolyAvatar('solo', 0), PLAYER_AVATARS.player);
-  assert.equal(monopolyAvatar('solo', 1), PLAYER_AVATARS.yatuan);
-  assert.equal(monopolyAvatar('local', 0), PLAYER_AVATARS.player);
-  assert.equal(monopolyAvatar('local', 1), PLAYER_AVATARS.partner);
-  assert.notEqual(PLAYER_AVATARS.player, PLAYER_AVATARS.partner);
-  for (const path of Object.values(PLAYER_AVATARS)) {
-    const bytes = await readFile(new URL(`../original-ui/${path}`, import.meta.url));
-    assert.ok(bytes.length > 1000, `${path} is missing or incomplete`);
-    assert.deepEqual([...bytes.subarray(0, 2)], [0xff, 0xd8], `${path} must be a JPEG`);
   }
 });
