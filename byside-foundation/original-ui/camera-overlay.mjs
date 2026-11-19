@@ -19,7 +19,7 @@ function loadCv(){
     timer=setTimeout(()=>reject(new Error('视觉组件启动超时，请刷新页面重试。')),20000);
   });
 }
-export function mountCameraOverlay({root, liveUI, restoreProjection}){
+export function mountCameraOverlay({root, liveUI, restoreProjection, output}){
   const panel=$('#ar-panel'),bg=$('#projection-camera'),drawing=$('#ar-canvas'),status=$('#ar-status'),select=$('#ar-device'),begin=$('#ar-start'),sizing=$('#ar-scale');
   const ctx=drawing.getContext('2d'),sample=document.createElement('canvas'),sampleCtx=sample.getContext('2d',{willReadFrequently:true});
   let active=false,stream=null,tracker=null,tracking=false,selecting=false,points=[],quad=null,frameId=0,lastFrame=0,lastEffect=0,gen=0,releaseLock=null,drag=null,starting=false,searching=false,autoWaiting=false,rechecking=false;
@@ -33,7 +33,7 @@ export function mountCameraOverlay({root, liveUI, restoreProjection}){
   retry.type='button';retry.textContent='重连摄像头';
   blackControls.className='black-camera-controls';blackStatus.setAttribute('role','status');
   blackControls.append(retry,blackStatus);panel.append(blackControls);
-  const markerFollow=mountMarkerFollow({root,video:bg,controls:blackControls,loadCv,device:()=>stream?.getVideoTracks()[0]?.getSettings().deviceId});
+  const markerFollow=mountMarkerFollow({root,video:bg,controls:blackControls,loadCv,output,localPreview:()=>!active,device:()=>stream?.getVideoTracks()[0]?.getSettings().deviceId});
   const savePosition=()=>save(PLACEMENT,position);
   const localRect=()=>cameraRect(innerWidth,innerHeight,bg.videoWidth||1,bg.videoHeight||1);
   const toScreen=p=>{const r=localRect();return{x:r.x+p.x/sample.width*r.width,y:r.y+p.y/sample.height*r.height};};
@@ -92,7 +92,7 @@ export function mountCameraOverlay({root, liveUI, restoreProjection}){
       window.dispatchEvent(new Event('yatuan:ar-camera-ready'));
       const track=next.getVideoTracks()[0];track.addEventListener('mute',()=>{if(stream===next){stopTracking();message('摄像头画面暂停，请检查 iPhone 锁屏和连接状态。');}});track.addEventListener('unmute',()=>{if(stream===next&&!tracking){message('摄像头画面已恢复，请重新圈定桌面。');}});track.addEventListener('ended',()=>{if(stream===next){stopCamera();message('摄像头已断开，请检查 iPhone 并重新连接。');}}, {once:true});
       const actual=track.getSettings().deviceId||select.value;const list=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');const matched=list.find(d=>d.deviceId===actual);preferred={id:actual,label:matched?.label||track.label||''};save(PREF,preferred);await devices();
-      if(!active){blackStatus.textContent='摄像头已连接';markerFollow.resume();return;}
+      if(!active||output?.geometry()){blackStatus.textContent='摄像头已连接';markerFollow.resume();if(!active)return;}
       await prepareAr(token);
     }catch(err){clearTimeout(timeout);if(token===gen){stopCamera();const e=err;message(e?.name==='NotAllowedError'?'摄像头权限被拒绝，请在浏览器允许后重试。':e?.name==='NotFoundError'||e?.name==='OverconstrainedError'?'所选摄像头不在线，请接好 iPhone 后刷新设备列表。':e?.name==='NotReadableError'?'摄像头不可用，可能正被其他页面或应用占用。':(e?.message||'摄像头连接失败。'));if(fromAuto&&(e?.name==='NotFoundError'||e?.name==='OverconstrainedError')){autoWaiting=true;message('正在等待手机摄像头上线；请将 iPhone 锁屏并放在 Mac 附近。');}}}
     finally{starting=false;if(token===gen)begin.disabled=false;}
@@ -202,7 +202,7 @@ export function mountCameraOverlay({root, liveUI, restoreProjection}){
   }
   $('#projection-black').onclick=()=>{blackMode=true;showBlack();void connectBlack();};
   async function openOverlay(autoConnect=false){
-    blackMode=false;markerFollow.stop();
+    blackMode=false;if(!output?.geometry())markerFollow.stop();
     if(active && (stream || starting))return;
     stopBlackEffect();
     active=true;panel.hidden=false;$('#projection-ar').setAttribute('aria-pressed','true');$('#projection-black').setAttribute('aria-pressed','false');document.body.classList.add('ar-active');bg.hidden=false;root.hidden=true;
@@ -231,5 +231,5 @@ export function mountCameraOverlay({root, liveUI, restoreProjection}){
     }catch{}finally{rechecking=false;}
   }
   navigator.mediaDevices?.addEventListener('devicechange',handleDeviceChange);addEventListener('resize',layout);addEventListener('pagehide',()=>{stopCamera();navigator.mediaDevices?.removeEventListener('devicechange',handleDeviceChange);});
-  return {render,isActive:()=>active,open:openOverlay,playIntro,stopIntro:stopBlackEffect};
+  return {render,isActive:()=>active,open:openOverlay,playIntro,stopIntro:stopBlackEffect,refreshOutput:()=>{if(stream&&(blackMode||output?.geometry()))void markerFollow.resume();else markerFollow.stop();}};
 }

@@ -22,3 +22,7 @@
 @media(prefers-reduced-motion:reduce){.gar-token.is-stepping,.gar-die.is-rolling{animation:none!important}}
 .gar-ttt-cell{position:relative}.gar-ttt-cell .gar-cell-coord{position:absolute;top:4px;left:6px;color:#82977b;font-size:9px;line-height:1}
 .gar-voice-caption{margin:0;padding:6px 8px;max-height:65px;overflow:auto;border-radius:8px;background:#fff5d9;color:#5f6248;font-size:9px;line-height:1.4;overflow-wrap:anywhere}.gar-voice-caption:empty{display:none}
+.gar-layout:has(>.gar-mascot){grid-template-columns:280px minmax(0,1fr) 62px;gap:8px}
+.gar-mascot{width:62px;height:62px;display:grid;place-items:center}
+.gar-mascot>img{width:100%;height:100%;object-fit:contain}
+.gar-mascot .character,.gar-mascot .character :is(img,video){width:100%;height:100%;object-fit:contain}

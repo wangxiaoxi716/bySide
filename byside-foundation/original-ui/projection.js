@@ -8,12 +8,15 @@ import { mountCameraOverlay } from './camera-overlay.mjs';
 import { GAME_AR_MESSAGE, GAME_AR_WINDOW, createGameProjectionController, validGameSelection } from './game-ar-control.js';
 import { renderGameProjection } from './game-ar-view.js';
 import { createVoiceGameController, voiceGameTools } from './voice-games.js';
+import { createFollowerMotion } from './marker-follow.mjs';
 
 const root = document.querySelector('#projection-root');
 const SCENE_WIDTH = 510;
 const SCENE_HEIGHT = 300;
 let previous = '';
 let overlay = null;
+const outputOnly=new URL(location.href).searchParams.get('display')==='1';
+document.documentElement.toggleAttribute('data-projection-output',outputOnly);
 
 function render(s) {
   s = getDemoCharacterState(s);
@@ -51,6 +54,11 @@ function render(s) {
   stats.hidden = !p.showStats;
   const gameCaption = root.querySelector('.gar-voice-caption');
   if (gameCaption && gameCaption.textContent !== s.speech) gameCaption.textContent = s.speech;
+  const mascot=root.querySelector('.gar-mascot');
+  if(mascot&&mascot.dataset.motionKey!==key){
+    mascot.innerHTML=characterArt({...s,character:'yatuan'},{decorateAnimation:false});
+    mascot.dataset.motionKey=key;
+  }
   overlay?.render();
 }
 
@@ -60,6 +68,110 @@ subscribePresentation(() => render(getState()));
 subscribeDemo(() => render(getState()));
 addEventListener('resize', () => render(getState()));
 window.visualViewport?.addEventListener('resize', () => render(getState()));
+if(outputOnly) mountOutput();
+else mountControls();
+
+function mountOutput(){
+  const controller=window.opener;
+  const send=message=>controller?.postMessage({projectionOutput:true,...message},location.origin);
+  const host=document.createElement('div'), dot=document.createElement('div'), intro=document.createElement('video');
+  host.className='gar-root';host.hidden=true;root.append(host);
+  dot.className='marker-calibration';dot.hidden=true;document.body.append(dot);
+  intro.className='projection-output-intro';intro.hidden=true;intro.muted=true;intro.playsInline=true;
+  document.body.prepend(intro);
+  document.querySelector('.projection-bg-video').remove();
+  const stopIntro=()=>{intro.pause();intro.hidden=true;};
+  intro.addEventListener('ended',stopIntro);
+  let calibrationTimer,reportFrame=0,gameView=null,lastReport=0;
+  function reportBounds(){
+      const rects=[...root.querySelectorAll('.projection-character,.projection-bubble,.gar-root')]
+        .filter(element=>!element.closest('[hidden]')&&Number(getComputedStyle(element).opacity)>.1)
+        .map(element=>{const {left,right,top,bottom}=element.getBoundingClientRect();return {left,right,top,bottom};});
+      const fullscreen=Boolean(document.fullscreenElement)||(Math.abs(innerWidth-screen.width)<=2&&Math.abs(innerHeight-screen.height)<=2);
+      send({type:'bounds',geometry:[innerWidth,innerHeight,devicePixelRatio,screenX,screenY,fullscreen],rects});
+      lastReport=performance.now();
+  }
+  function report(){
+    if(reportFrame||performance.now()-lastReport<60)return;
+    reportFrame=requestAnimationFrame(()=>{reportFrame=0;reportBounds();});
+  }
+  function setCalibration(active,target){
+    clearTimeout(calibrationTimer);
+    document.body.classList.toggle('marker-calibrating',active);
+    dot.hidden=!active||!target;
+    if(!dot.hidden){dot.style.left=`${target.x*100}%`;dot.style.top=`${target.y*100}%`;}
+    if(active)calibrationTimer=setTimeout(()=>setCalibration(false),2500);
+  }
+  const motion=createFollowerMotion(root,report);
+  const redraw=()=>motion.redraw();
+  window.addEventListener('message',event=>{
+    if(event.origin!==location.origin||event.source!==controller||!event.data?.projectionControl)return;
+    const message=event.data;
+    if(message.type==='report-bounds')reportBounds();
+    else if(message.type==='follow')motion.update(message.point,message.stoneMode);
+    else if(message.type==='calibration')setCalibration(message.calibrating,message.target);
+    else if(message.type==='game'){
+      gameView=message.view;
+      host.hidden=!gameView;root.querySelector('.projection-scene').hidden=Boolean(gameView);
+      if(gameView)host.innerHTML=renderGameProjection(gameView);
+      else host.replaceChildren();
+      render(getState());redraw();
+    }else if(message.type==='intro'){
+      if(!intro.src)intro.src='./开场视频.mp4';
+      intro.currentTime=0;intro.hidden=false;void intro.play().catch(stopIntro);
+    }else if(message.type==='stop-intro')stopIntro();
+  });
+  const full=()=>{if(!document.fullscreenElement)void document.documentElement.requestFullscreen().catch(()=>{});};
+  document.addEventListener('dblclick',full);
+  document.addEventListener('keydown',event=>{if(event.key.toLowerCase()==='f')full();});
+  document.addEventListener('fullscreenchange',()=>{redraw();reportBounds();});
+  window.addEventListener('resize',redraw);
+  const heartbeat=setInterval(reportBounds,1000);
+  window.addEventListener('pagehide',()=>{clearInterval(heartbeat);send({type:'closed'});});
+  subscribe(redraw);subscribePresentation(redraw);
+  send({type:'ready'});reportBounds();
+}
+
+function mountControls(){
+let displayWindow,displayGeometry,displayRects,presentedGame=null;
+const output={
+  connected:()=>Boolean(displayWindow&&!displayWindow.closed),
+  geometry:()=>displayWindow&&!displayWindow.closed?displayGeometry:undefined,
+  rects:()=>output.geometry()?displayRects:undefined,
+  send:message=>{if(displayWindow&&!displayWindow.closed)displayWindow.postMessage({projectionControl:true,...message},location.origin);},
+};
+window.addEventListener('message',event=>{
+  if(event.origin!==location.origin||!event.source||!event.data?.projectionOutput)return;
+  if(event.source!==displayWindow){
+    if(output.connected()||event.data.type==='closed')return;
+    try{
+      const sender=new URL(event.source.location.href);
+      if(event.source.opener!==window||sender.origin!==location.origin||sender.pathname!==location.pathname||sender.searchParams.get('display')!=='1')return;
+    }catch{return;}
+    displayWindow=event.source;displayGeometry=undefined;displayRects=undefined;
+    output.send({type:'game',view:presentedGame});
+  }
+  const message=event.data;
+  if(message.type==='ready'){output.send({type:'game',view:presentedGame});output.send({type:'report-bounds'});}
+  if(message.type==='bounds'){
+    const changed=JSON.stringify(displayGeometry)!==JSON.stringify(message.geometry);
+    displayGeometry=message.geometry;displayRects=message.rects;
+    if(changed)overlay?.refreshOutput();
+  }
+  if(message.type==='closed'){displayGeometry=undefined;displayRects=undefined;overlay?.refreshOutput();}
+});
+const openDisplay=document.createElement('button');
+openDisplay.type='button';openDisplay.textContent='打开纯投影输出';
+document.querySelector('#projection-black').after(openDisplay);
+openDisplay.onclick=()=>{
+  if(output.connected()){output.send({type:'report-bounds'});displayWindow.focus();return;}
+  const url=new URL('projection.html',location.href);url.searchParams.set('display','1');
+  displayGeometry=undefined;displayRects=undefined;
+  displayWindow=window.open(url,'yatuan-clean-output','popup,width=1000,height=650');
+  if(displayWindow)document.querySelector('#projection-black').click();
+  else document.querySelector('.projection-tools span').textContent='请允许弹出投影窗口';
+};
+const sendGame=view=>{presentedGame=view;output.send({type:'game',view});};
 document.querySelector('#projection-fullscreen').onclick = async () => {
   try {
     if (document.fullscreenElement) await document.exitFullscreen();
@@ -84,7 +196,7 @@ const liveUI=mountLiveUI({
     return result;
   },
 });
-overlay=mountCameraOverlay({root,liveUI,restoreProjection:()=>render(getState())});
+overlay=mountCameraOverlay({root,liveUI,output,restoreProjection:()=>render(getState())});
 const voiceButton = document.querySelector('#projection-voice');
 const voiceStatus = document.querySelector('#projection-voice-status');
 let voiceStarting = false, voiceStopping = false, voiceOperation = 0, voiceNotice = '', waitingForCamera = false;
@@ -119,6 +231,7 @@ voiceButton.addEventListener('click', async () => {
   if (voiceStopping) return;
   if (voiceStarting || liveUI.controller.getStatus().active) {
     overlay.stopIntro();
+    output.send({type:'stop-intro'});
     voiceOperation++; voiceStarting = false; voiceStopping = true; waitingForCamera = false; voiceNotice = '';
     renderVoiceControl();
     try { await liveUI.stopDirect(); }
@@ -127,6 +240,7 @@ voiceButton.addEventListener('click', async () => {
   }
   const operation = ++voiceOperation;
   overlay.playIntro();
+  output.send({type:'intro'});
   voiceStarting = true; waitingForCamera = true; voiceNotice = '';
   renderVoiceControl();
   try { await liveUI.startDirect(); }
@@ -143,6 +257,7 @@ root.append(gameHost);
 const companionButton = document.querySelector('#projection-companion');
 let gameRenderKey = '';
 const gameProjection = createGameProjectionController({ onUpdate(view) {
+  sendGame(view);
   root.querySelector('.projection-scene').hidden = Boolean(view);
   gameHost.hidden = !view;
   companionButton.hidden = !view;
@@ -154,7 +269,7 @@ const gameProjection = createGameProjectionController({ onUpdate(view) {
     gameHost.replaceChildren();
     gameRenderKey = '';
   }
-  overlay.render();
+  render(getState());
 } });
 voiceGame = createVoiceGameController({ onChange(kind, snapshot) {
   if (!kind) {
@@ -168,7 +283,8 @@ voiceGame = createVoiceGameController({ onChange(kind, snapshot) {
     const caption = gameHost.querySelector('.gar-voice-caption');
     if (caption) caption.textContent = getState().speech;
   }
-  overlay.render();
+  sendGame(kind?{game:kind,snapshot,connected:true}:null);
+  render(getState());
 } });
 companionButton.addEventListener('click', () => {
   if (voiceGame.isActive()) voiceGame.clear();
@@ -189,4 +305,5 @@ if(autoConnect){launchUrl.searchParams.delete('ar');history.replaceState(history
 overlay.open(autoConnect);
 document.querySelector('#projection-live').onclick=()=>liveUI.open();
 discoverLocalAI();
+}
 

@@ -18,6 +18,8 @@
 .projection-body .projection-bubble{max-height:90px;left:220px;top:48px;min-width:85px;max-width:160px;padding:8px 10px;font-size:9px;line-height:1.5;border-radius:10px 10px 10px 2px;}
 .projection-body .projection-rug{left:104px;top:123px;width:112px;height:23px;background:radial-gradient(ellipse,#56622e88 0,transparent 68%);}
 .projection-body .projection-stats{left:50%;top:207px;width:280px;transform:translateX(-50%);gap:12px;padding:9px 12px;background:#fffdf0f5;border:1px solid #d3dabc;border-radius:12px;box-shadow:0 3px 12px #37472818;z-index:3;}
+.projection-body:not(.ar-active) .projection-stats{display:none;}
+.stone-follow-motion{transition:opacity 150ms ease-out;}
 .projection-body .mini-stat{color:#637048;font-size:9px;}
 .projection-body .mini-stat.pink{color:#9b6978;}
 .projection-body .mini-stat.amber{color:#9d7b2b;}
@@ -44,7 +46,13 @@
 .projection-body:not(.ar-active) .ar-voice-control{padding-top:0;border-top:0;}
 .ar-active .black-camera-controls{display:none;}
 .black-camera-controls{display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
-.marker-calibration{position:fixed;z-index:30;width:26px;height:26px;border-radius:50%;background:white;transform:translate(-50%,-50%);pointer-events:none;}
+.projection-body:not(.ar-active) .ar-panel :is(button,select){background:#263128;color:#bfcfba;border:1px solid #64725f;}
+.projection-body:not(.ar-active) .ar-panel button[aria-pressed="true"]{background:#354638;color:#d8e8d1;}
+.marker-calibration{position:fixed;z-index:30;width:clamp(34px,4vw,64px);aspect-ratio:1;border-radius:50%;background:white;transform:translate(-50%,-50%);pointer-events:none;}
+.marker-calibrating #projection-root,.marker-calibrating .projection-tools,.marker-calibrating .ar-panel,.marker-calibrating .black-projection-effects{visibility:hidden;}
+:root[data-projection-output] :is(.projection-tools,.ar-panel,#ar-canvas,.ar-video,.projection-bg-video){display:none!important;}
+.projection-output-intro{position:fixed;inset:0;width:100%;height:100%;object-fit:fill;pointer-events:none;}
+.marker-calibrating .projection-output-intro{visibility:hidden;}
 
 </style></head><body class="projection-body"><video class="projection-bg-video" src="./开场视频.mp4" autoplay muted loop playsinline></video><video id="projection-camera" class="ar-video" autoplay muted playsinline hidden></video><canvas id="ar-canvas" aria-label="选择桌面投影区域"></canvas><section id="ar-panel" class="ar-panel" hidden aria-label="桌面 AR 预览控制"><details id="ar-panel-details" open><summary><span>✳ 桌面 AR 预览</span><span class="ar-toggle"><span class="ar-collapse">收起 ▴</span><span class="ar-expand">展开 ▾</span></span></summary><p>桌面追踪在本机处理；开启桌面观察后会发送采样画面。</p><div><select id="ar-device" aria-label="选择摄像头"><option value="">选择摄像头</option></select><button id="ar-refresh">刷新</button><button id="ar-authorize">授权识别设备</button><button id="ar-start">连接摄像头</button></div><div><button id="ar-paper" disabled>自动识别白纸</button><button id="ar-calibrate" disabled>手动圈定</button><button id="ar-stop">关闭摄像头</button><button id="ar-close">退出 AR</button></div><div><label>角色大小 <input id="ar-scale" type="range" min="0.2" max="1" step="0.02" value="0.6"></label> <button id="ar-reset">重置位置</button></div><p>自动识别整张白纸；手动圈定按左上、右上、右下、左下选择完整投影边界。保持纸张和桌面固定，遮挡或快速移动可能丢失追踪。</p></details><p id="ar-status" role="status">选择摄像头后连接。</p><div class="ar-voice-control"><button id="projection-voice" type="button" aria-pressed="false">开始实时语音</button><span id="projection-voice-status" role="status" aria-live="polite"></span></div></section><main id="projection-root" aria-label="桌面陪伴投影视图"></main><div class="projection-tools"><span>同一浏览器内实时联动</span><button id="projection-ar" aria-pressed="true">AR 预览</button><button id="projection-black" aria-pressed="false">黑背景投影</button><button id="projection-live">开始桌边陪伴</button><button id="projection-companion" type="button" hidden>返回陪伴</button><button id="projection-fullscreen">进入全屏</button><a href="help.html" target="_blank" rel="noopener">接线说明</a><a href="./">回到小屋</a></div><script type="module" src="projection.js"></script></body></html>
 
