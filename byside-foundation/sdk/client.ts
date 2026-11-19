@@ -37,7 +37,7 @@ export type RealtimeCommand =
   | { type: 'vision.frame'; frameId: string; image: string; captureId?: string }
   | { type: 'tool.result'; callId: string; output: unknown };
 export type RealtimeEvent =
-  | { type: 'session.ready'; sessionId: string; provider: 'doubao-realtime'; fullDuplex: boolean; desktopVision?: boolean }
+  | { type: 'session.ready'; sessionId: string; provider: 'doubao-realtime' | 'bailian-realtime'; fullDuplex: boolean; desktopVision?: boolean }
   | { type: 'session.closed' | 'transcript.started' | 'audio.started' | 'audio.done' | 'audio.flush' | 'response.done' | 'response.canceled' }
   | { type: 'transcript.partial' | 'transcript.final' | 'assistant.text.delta' | 'assistant.text.done'; text: string }
   | { type: 'error'; code: string; message: string }

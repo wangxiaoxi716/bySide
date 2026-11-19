@@ -121,7 +121,7 @@ export function mountLiveUI({ beforeStart = () => {}, onActive = () => {}, realt
         fullDuplex: $('#live-duplex').checked,
         cameraId: '',
         sharedCameraOnly: true,
-        desktopVision: health.mode === 'model',
+        desktopVision: health.speech?.provider === 'bailian' || health.mode === 'model',
       });
     } finally {
       if (directAbort === abort) { directAbort = null; checking = false; }

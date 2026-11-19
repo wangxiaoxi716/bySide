@@ -8,7 +8,7 @@ import { mkdir, writeFile } from 'fs/promises';
 import { join } from 'path';
 import type { Request, Response } from 'express';
 import { ChatRequest, ChatResponse, MemoryRequest, MemoryRecord, RespondRequest, SnapshotResponse, SpeechRequest, SpeechResponse, VisionRequest, VisionResponse, GrowthRequest, GrowthResponse, CompanionPatch, CompanionRecord, CharacterImageRequest, DeviceRequest, DeviceRecord, LeaseRequest, LeaseResponse, ProjectionResponse, HealthResponse } from './api-contract';
-import { realtimeConfigured } from './realtime';
+import { realtimeConfigured, realtimeProvider } from './realtime';
 import { generateCharacter } from './image-generation';
 
 type Data = Record<string, any>;
@@ -140,7 +140,7 @@ class CompanionController {
   private active = false;
   private visionPending = new Map<string, AbortController>();
   constructor(@Inject(Store) private readonly db: Store, @Inject(ModelService) private readonly model: ModelService) {}
-  @Get('health') @ApiOkResponse({ type: HealthResponse }) health() { return { ok: true, mode: process.env.YATUAN_AI_KEY ? 'model' : 'demo', tts: !!(process.env.VOLC_SPEECH_API_KEY || process.env.YATUAN_TTS_KEY), speech: { provider: 'doubao', asrConfigured: !!process.env.VOLC_SPEECH_API_KEY, ttsConfigured: !!(process.env.VOLC_SPEECH_API_KEY || process.env.YATUAN_TTS_KEY), realtimeConfigured: realtimeConfigured() }, sessionId: 'default' }; }
+  @Get('health') @ApiOkResponse({ type: HealthResponse }) health() { return { ok: true, mode: process.env.YATUAN_AI_KEY ? 'model' : 'demo', tts: !!(process.env.VOLC_SPEECH_API_KEY || process.env.YATUAN_TTS_KEY), speech: { provider: realtimeProvider(), asrConfigured: !!process.env.VOLC_SPEECH_API_KEY, ttsConfigured: !!(process.env.VOLC_SPEECH_API_KEY || process.env.YATUAN_TTS_KEY), realtimeConfigured: realtimeConfigured() }, sessionId: 'default' }; }
   @Get('capabilities') @ApiOperation({ summary: '查看基座接口与扩展协议版本' }) capabilities() {
     return { apiVersion: 'v1', extensionProtocolVersion: '1.0', sessionId: 'default', permissions: { read: '读取伙伴快照和事件', growth: '提交成长活动', respond: '更新伙伴回应' }, eventTypes, speech: { synthesis: '/api/v1/speech', recognition: '/api/v1/speech/asr/stream', realtime: '/api/v1/speech/realtime', recognitionAudio: 'pcm_s16le/16000/mono' } };
   }

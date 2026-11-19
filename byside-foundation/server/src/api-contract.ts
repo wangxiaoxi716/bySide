@@ -107,7 +107,7 @@ export class ProjectionResponse {
   @ApiProperty({ type: CompanionRecord }) companion!: CompanionRecord;
 }
 export class SpeechStatus {
-  @ApiProperty({ type: String, enum: ['doubao'] }) provider!: string;
+  @ApiProperty({ type: String, enum: ['doubao', 'bailian'] }) provider!: string;
   @ApiProperty({ type: Boolean, description: '密钥已配置，不代表供应商鉴权成功' }) asrConfigured!: boolean;
   @ApiProperty({ type: Boolean, description: '密钥已配置，不代表供应商鉴权成功' }) ttsConfigured!: boolean;
   @ApiProperty({ type: Boolean, description: '实时语音密钥已配置，不代表供应商鉴权成功' }) realtimeConfigured!: boolean;

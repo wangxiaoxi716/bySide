@@ -38,7 +38,7 @@ function render(s) {
     root.innerHTML = '<div class="projection-scene"><canvas class="ar-original-effects" width="510" height="300" aria-hidden="true"></canvas><div class="projection-rug"></div><div class="projection-character"></div><div class="projection-bubble" aria-live="polite"></div><div class="projection-stats"></div><div id="projection-live-status" aria-live="polite"></div></div>';
   }
   if (key !== previous) {
-    root.querySelector('.projection-character').innerHTML = characterArt(s);
+    root.querySelector('.projection-character').innerHTML = characterArt(s, { decorateAnimation: false });
     previous = key;
   }
   const bubble = root.querySelector('.projection-bubble');
@@ -118,6 +118,7 @@ window.addEventListener('yatuan:ar-camera-ready', () => resumeArObservation(live
 voiceButton.addEventListener('click', async () => {
   if (voiceStopping) return;
   if (voiceStarting || liveUI.controller.getStatus().active) {
+    overlay.stopIntro();
     voiceOperation++; voiceStarting = false; voiceStopping = true; waitingForCamera = false; voiceNotice = '';
     renderVoiceControl();
     try { await liveUI.stopDirect(); }
@@ -125,6 +126,7 @@ voiceButton.addEventListener('click', async () => {
     return;
   }
   const operation = ++voiceOperation;
+  overlay.playIntro();
   voiceStarting = true; waitingForCamera = true; voiceNotice = '';
   renderVoiceControl();
   try { await liveUI.startDirect(); }

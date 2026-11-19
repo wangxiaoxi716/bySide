@@ -10,6 +10,7 @@ export function createDesktopCompanion(overrides = {}) {
   const initial = () => ({ active: false, localOwner: false, mode: 'idle', voiceState: 'idle', voiceWarning: '', error: '', message: '开始后，可以一边说话，一边让芽团看看桌面。', frameCount: 0, requestCount: 0, lastFrameAt: 0, observation: '', foods: [], previewImage: '', sourceLabel: '', shared: false, observing: false, visionEnabled: true });
   let status = initial(), voice, camera, video, timer, ready = false, generation = 0, captureTask, stopping = Promise.resolve();
   let cameraId, sharedCameraOnly = false, visionEnabled = true;
+  let omni = false;
   const snapshot = () => ({ ...status, foods: status.foods.map(food => ({ ...food })) });
   function emit(patch) {
     status = { ...status, ...patch };
@@ -30,7 +31,7 @@ export function createDesktopCompanion(overrides = {}) {
   }
   function schedule() {
     clearTimeout(timer);
-    if (status.active && status.observing && ready) timer = setTimeout(() => { void sendFrame().finally(schedule); }, io.config().intervalSeconds * 1000);
+    if (status.active && status.observing && ready) timer = setTimeout(() => { void sendFrame().finally(schedule); }, omni ? 1000 : io.config().intervalSeconds * 1000);
   }
   async function sendFrame(captureId, initialFrame) {
     if (!ready || !status.active || !status.observing) return;
@@ -78,9 +79,10 @@ export function createDesktopCompanion(overrides = {}) {
     if (token !== generation) return false;
     voice = io.createVoice({
       desktopVision: visionEnabled, fullDuplex, tools: io.tools || [], onToolCall: io.onToolCall,
-      onReady() {
+      onReady(session) {
         if (token !== generation) return;
         ready = true;
+        omni = session?.provider === 'bailian-realtime';
         if (status.observing) void sendFrame(undefined, firstFrame).finally(schedule);
         else if (visionEnabled) voice?.send({ type: 'vision.pause' });
         emit({ mode: status.observing ? 'observing' : 'paused', message: listeningMessage() });
