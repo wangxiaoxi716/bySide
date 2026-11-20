@@ -21,17 +21,19 @@ test('the actual worklet emits frames and continues through muted input', async 
     Object.defineProperty(globalThis, name, { configurable: true, writable: true, value });
   }
   t.after(() => { for (const [name, descriptor] of saved) { if (descriptor) Object.defineProperty(globalThis, name, descriptor); else delete (globalThis as any)[name]; } });
-  const frames: ArrayBuffer[] = [];
+  const frames: {frame:ArrayBuffer;capturedAt:number}[] = [];
   let Processor: any;
   replace('sampleRate', 48000);
-  replace('AudioWorkletProcessor', class { port = { postMessage: (frame: ArrayBuffer) => frames.push(frame) }; });
+  replace('currentTime', 1.25);
+  replace('AudioWorkletProcessor', class { port = { postMessage: (frame: typeof frames[number]) => frames.push(frame) }; });
   replace('registerProcessor', (_name: string, constructor: any) => { Processor = constructor; });
   await import('../original-ui/voice-capture-worklet.mjs');
   const processor = new Processor();
   for (let i = 0; i < 375; i++) assert.equal(processor.process([[new Float32Array(128).fill(-1)]], [[new Float32Array(128)]]), true);
   assert.equal(frames.length, 50);
-  assert.equal(new DataView(frames[0]).getInt16(0, true), -32768);
+  assert.equal(frames[0].capturedAt,1.25);
+  assert.equal(new DataView(frames[0].frame).getInt16(0, true), -32768);
   for (let i = 0; i < 375; i++) processor.process([], [[new Float32Array(128)]]);
   assert.equal(frames.length, 100);
-  assert.ok(new Uint8Array(frames[99]).every(value => value === 0));
+  assert.ok(new Uint8Array(frames[99].frame).every(value => value === 0));
 });

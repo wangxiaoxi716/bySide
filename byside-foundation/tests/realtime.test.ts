@@ -77,7 +77,7 @@ test('realtime duplex bridge synchronizes chat and closes provider sessions', { 
   const base = `http://127.0.0.1:${port}/api/v1`;
   let child: ChildProcess | undefined, output = '';
   const start = async (withKey: boolean) => {
-    child = spawn(process.execPath, ['server/dist/main.js'], { cwd: root, env: { ...process.env, PORT: String(port), HOST: '127.0.0.1', BYSIDE_DATABASE_URL: dbUrl, YATUAN_AI_KEY: '', YATUAN_TTS_KEY: '', VOLC_SPEECH_API_KEY: '', VOLC_API_KEY: '', VOLC_REALTIME_API_KEY: withKey ? 'test-realtime-key' : '', VOLC_REALTIME_ENDPOINT: `ws://127.0.0.1:${providerPort}/duplex` }, stdio: ['ignore', 'pipe', 'pipe'] });
+    child = spawn(process.execPath, ['server/dist/main.js'], { cwd: root, env: { ...process.env, PORT: String(port), HOST: '127.0.0.1', BYSIDE_DATABASE_URL: dbUrl, YATUAN_REALTIME_PROVIDER: 'doubao', YATUAN_AI_KEY: '', YATUAN_TTS_KEY: '', VOLC_SPEECH_API_KEY: '', VOLC_API_KEY: '', VOLC_REALTIME_API_KEY: withKey ? 'test-realtime-key' : '', VOLC_REALTIME_ENDPOINT: `ws://127.0.0.1:${providerPort}/duplex` }, stdio: ['ignore', 'pipe', 'pipe'] });
     child.stdout?.on('data', data => { output += data; }); child.stderr?.on('data', data => { output += data; });
     for (let i = 0; i < 100; i++) { if (child.exitCode !== null) throw new Error(output); try { if ((await fetch(`${base}/health`)).ok) return; } catch {} await delay(100); }
     throw new Error(`server startup timeout: ${output}`);
@@ -115,6 +115,14 @@ test('realtime duplex bridge synchronizes chat and closes provider sessions', { 
     const snapshot: any = await (await fetch(`${base}/snapshot`)).json();
     assert.equal(snapshot.companion.speech, '好，我记住了。'); assert.equal(snapshot.companion.growth, 19);
     assert.ok(!JSON.stringify(received.events.filter(e => e.type !== 'binary')).includes('test-realtime-key'));
+    for(let i=0;i<100;i++)client.send(Buffer.alloc(640));
+    await delay(100);
+    assert.equal(client.readyState,WebSocket.OPEN);
+    assert.ok(audioFrames>1&&audioFrames<100);
+    const afterBurst=audioFrames;
+    client.send(Buffer.alloc(640));
+    for(let i=0;i<50&&audioFrames===afterBurst;i++)await delay(10);
+    assert.equal(audioFrames,afterBurst+1);
     client.send(JSON.stringify({ type: 'session.close' })); await received.wait('session.closed'); await once(client, 'close');
     assert.equal(closeCount, 1);
     client = new WebSocket(`ws://127.0.0.1:${port}/api/v1/speech/realtime`); const disconnected = recorder(client);

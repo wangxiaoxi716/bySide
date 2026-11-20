@@ -99,7 +99,7 @@ export function mountLiveUI({ beforeStart = () => {}, onActive = () => {}, realt
       await refreshCameras();
     } finally { checking = false; }
   }
-  async function startDirect() {
+  async function startDirect({audioOnly=false} = {}) {
     if (checking || controller.getStatus().active) return false;
     const token = ++lifecycle, abort = new AbortController();
     directAbort = abort; checking = true;
@@ -121,7 +121,7 @@ export function mountLiveUI({ beforeStart = () => {}, onActive = () => {}, realt
         fullDuplex: $('#live-duplex').checked,
         cameraId: '',
         sharedCameraOnly: true,
-        desktopVision: health.mode === 'model',
+        desktopVision: !audioOnly && (health.speech?.provider === 'bailian' || health.mode === 'model'),
       });
     } finally {
       if (directAbort === abort) { directAbort = null; checking = false; }

@@ -2,6 +2,7 @@ import {chooseAutoCamera,availableAutoCamera} from './camera-start.mjs';
 import {createPlaneTracker,detectWhitePaper} from './plane-tracker.mjs';
 import {validQuad,planeTransform,transformPoint,cameraRect,cssMatrix,projectionRegion} from './plane-geometry.mjs';
 import {publishDesktopCamera} from './desktop-camera.js';
+import {mountMarkerFollow} from './marker-follow.mjs';
 
 const PREF='yatuan:ar-camera:v1', FOUNDATION_PREF='byside.foundation.camera';
 const PLACEMENT='yatuan:ar-placement:v1';
@@ -18,7 +19,7 @@ function loadCv(){
     timer=setTimeout(()=>reject(new Error('视觉组件启动超时，请刷新页面重试。')),20000);
   });
 }
-export function mountCameraOverlay({root, liveUI, restoreProjection}){
+export function mountCameraOverlay({root, liveUI, restoreProjection, output, physical}){
   const panel=$('#ar-panel'),bg=$('#projection-camera'),drawing=$('#ar-canvas'),status=$('#ar-status'),select=$('#ar-device'),begin=$('#ar-start'),sizing=$('#ar-scale');
   const ctx=drawing.getContext('2d'),sample=document.createElement('canvas'),sampleCtx=sample.getContext('2d',{willReadFrequently:true});
   let active=false,stream=null,tracker=null,tracking=false,selecting=false,points=[],quad=null,frameId=0,lastFrame=0,lastEffect=0,gen=0,releaseLock=null,drag=null,starting=false,searching=false,autoWaiting=false,rechecking=false;
@@ -27,6 +28,12 @@ export function mountCameraOverlay({root, liveUI, restoreProjection}){
   if(!Number.isFinite(position.x)||!Number.isFinite(position.y)||!Number.isFinite(position.scale))position={x:.15,y:.2,scale:.6};
   position={x:clamp(position.x,0,.95),y:clamp(position.y,0,.95),scale:clamp(position.scale,.2,1)};sizing.value=position.scale;
   const message=text=>{status.textContent=text;};
+  const blackControls=document.createElement('div');
+  const retry=document.createElement('button'), blackStatus=document.createElement('span');
+  retry.type='button';retry.textContent='重连摄像头';
+  blackControls.className='black-camera-controls';blackStatus.setAttribute('role','status');
+  blackControls.append(retry,blackStatus);panel.append(blackControls);
+  const markerFollow=mountMarkerFollow({root,video:bg,controls:blackControls,loadCv,output,physical,localPreview:()=>!active,device:()=>stream?.getVideoTracks()[0]?.getSettings().deviceId});
   const savePosition=()=>save(PLACEMENT,position);
   const localRect=()=>cameraRect(innerWidth,innerHeight,bg.videoWidth||1,bg.videoHeight||1);
   const toScreen=p=>{const r=localRect();return{x:r.x+p.x/sample.width*r.width,y:r.y+p.y/sample.height*r.height};};
@@ -55,9 +62,9 @@ export function mountCameraOverlay({root, liveUI, restoreProjection}){
     }catch{root.hidden=true;}
     return true;
   }
-  function stopTracking(){cancelAnimationFrame(frameId);frameId=0;tracker?.destroy();tracker=null;tracking=false;selecting=false;searching=false;points=[];quad=null;drawing.style.pointerEvents='none';drawGuides();root.hidden=true;}
+  function stopTracking(){cancelAnimationFrame(frameId);frameId=0;tracker?.destroy();tracker=null;tracking=false;selecting=false;searching=false;points=[];quad=null;drawing.style.pointerEvents='none';drawGuides();root.hidden=active;}
   function release(){releaseLock?.();releaseLock=null;}
-  function stopCamera(){autoWaiting=false;gen++;stopSharingCamera?.();stopSharingCamera=null;stopTracking();const old=stream;stream=null;old?.getTracks().forEach(t=>t.stop());bg.srcObject=null;release();begin.disabled=false;$('#ar-calibrate').disabled=true;$('#ar-paper').disabled=true;message('摄像头已关闭。');}
+  function stopCamera(){autoWaiting=false;gen++;markerFollow.stop();stopSharingCamera?.();stopSharingCamera=null;stopTracking();const old=stream;stream=null;old?.getTracks().forEach(t=>t.stop());bg.srcObject=null;release();begin.disabled=false;$('#ar-calibrate').disabled=true;$('#ar-paper').disabled=true;blackStatus.textContent='摄像头未连接';message('摄像头已关闭。');}
   async function lock(){
     if(!navigator.locks?.request)return true;
     return new Promise(resolve=>{navigator.locks.request('yatuan-live-devices',{ifAvailable:true},held=>{if(!held){resolve(false);return;}return new Promise(done=>{releaseLock=done;resolve(true);});}).catch(()=>resolve(false));});
@@ -85,13 +92,18 @@ export function mountCameraOverlay({root, liveUI, restoreProjection}){
       window.dispatchEvent(new Event('yatuan:ar-camera-ready'));
       const track=next.getVideoTracks()[0];track.addEventListener('mute',()=>{if(stream===next){stopTracking();message('摄像头画面暂停，请检查 iPhone 锁屏和连接状态。');}});track.addEventListener('unmute',()=>{if(stream===next&&!tracking){message('摄像头画面已恢复，请重新圈定桌面。');}});track.addEventListener('ended',()=>{if(stream===next){stopCamera();message('摄像头已断开，请检查 iPhone 并重新连接。');}}, {once:true});
       const actual=track.getSettings().deviceId||select.value;const list=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');const matched=list.find(d=>d.deviceId===actual);preferred={id:actual,label:matched?.label||track.label||''};save(PREF,preferred);await devices();
-      message('摄像头已连接，正在加载桌面追踪组件…');await loadCv();if(token!==gen)return;
-      const width=640;sample.width=width;sample.height=Math.max(1,Math.round(width*bg.videoHeight/bg.videoWidth));$('#ar-calibrate').disabled=false;$('#ar-paper').disabled=false;message('点击“自动识别白纸”，或手动圈定投影区域。');layout();
+      if(!active||output?.geometry()){blackStatus.textContent='摄像头已连接';markerFollow.resume();if(!active)return;}
+      await prepareAr(token);
     }catch(err){clearTimeout(timeout);if(token===gen){stopCamera();const e=err;message(e?.name==='NotAllowedError'?'摄像头权限被拒绝，请在浏览器允许后重试。':e?.name==='NotFoundError'||e?.name==='OverconstrainedError'?'所选摄像头不在线，请接好 iPhone 后刷新设备列表。':e?.name==='NotReadableError'?'摄像头不可用，可能正被其他页面或应用占用。':(e?.message||'摄像头连接失败。'));if(fromAuto&&(e?.name==='NotFoundError'||e?.name==='OverconstrainedError')){autoWaiting=true;message('正在等待手机摄像头上线；请将 iPhone 锁屏并放在 Mac 附近。');}}}
     finally{starting=false;if(token===gen)begin.disabled=false;}
   }
-  function drawOriginalEffect(){
-    const video=document.querySelector('.projection-bg-video'),canvas=root.querySelector('.ar-original-effects');
+  async function prepareAr(token){
+    message('摄像头已连接，正在加载桌面追踪组件…');
+    try{await loadCv();}catch{if(token===gen&&active)message('桌面追踪组件未加载，摄像头仍可使用。');return;}
+    if(token!==gen||!active)return;
+    const width=640;sample.width=width;sample.height=Math.max(1,Math.round(width*bg.videoHeight/bg.videoWidth));$('#ar-calibrate').disabled=false;$('#ar-paper').disabled=false;message('点击“自动识别白纸”，或手动圈定投影区域。');layout();
+  }
+  function drawOriginalEffect(canvas=root.querySelector('.ar-original-effects'),video=document.querySelector('.projection-bg-video')){
     if(!video||!canvas||video.readyState<2)return;
     const effect=canvas.getContext('2d',{willReadFrequently:true});
     try{effect.drawImage(video,0,0,canvas.width,canvas.height);const frame=effect.getImageData(0,0,canvas.width,canvas.height),data=frame.data;for(let i=0;i<data.length;i+=4){const light=Math.max(data[i],data[i+1],data[i+2]);data[i+3]=Math.min(255,Math.max(0,(light-8)*2.1));}effect.putImageData(frame,0,0);}catch{/* An unavailable decoration must not interrupt tracking. */}
@@ -135,12 +147,66 @@ export function mountCameraOverlay({root, liveUI, restoreProjection}){
     finally{temporary?.getTracks().forEach(t=>t.stop());}
   };
   begin.onclick=()=>start(false);select.addEventListener('change',()=>{autoWaiting=false;});$('#ar-calibrate').onclick=calibrate;$('#ar-stop').onclick=stopCamera;
-  function showBlack(){stopCamera();active=false;panel.hidden=true;document.body.classList.remove('ar-active');bg.hidden=true;root.hidden=false;$('#projection-ar').setAttribute('aria-pressed','false');$('#projection-black').setAttribute('aria-pressed','true');restoreProjection();}
-  $('#ar-close').onclick=showBlack;
-  $('#projection-black').onclick=showBlack;
+  let blackEffectFrame = 0;
+  const blackEffect = document.createElement('canvas');
+  blackEffect.className = 'black-projection-effects';
+  blackEffect.width = 510;
+  blackEffect.height = 300;
+  blackEffect.setAttribute('aria-hidden', 'true');
+  blackEffect.hidden = true;
+  root.before(blackEffect);
+  const effectVideo = document.createElement('video');
+  effectVideo.src = document.querySelector('.projection-bg-video').src;
+  effectVideo.muted = true;
+  effectVideo.playsInline = true;
+  function stopBlackEffect(){
+    cancelAnimationFrame(blackEffectFrame);
+    effectVideo.pause();
+    blackEffect.hidden = true;
+  }
+  effectVideo.addEventListener('ended',stopBlackEffect);
+  function drawBlackEffect(now){
+    if(active||blackEffect.hidden)return;
+    if(now-lastEffect>=80){lastEffect=now;drawOriginalEffect(blackEffect,effectVideo);}
+    blackEffectFrame=requestAnimationFrame(drawBlackEffect);
+  }
+  function playIntro(){
+    if(active)return;
+    stopBlackEffect();
+    effectVideo.currentTime=0;
+    blackEffect.getContext('2d').clearRect(0,0,blackEffect.width,blackEffect.height);
+    blackEffect.hidden=false;
+    void effectVideo.play().catch(stopBlackEffect);
+    blackEffectFrame=requestAnimationFrame(drawBlackEffect);
+  }
+  function showBlack(){stopTracking();active=false;document.body.classList.remove('ar-active');bg.hidden=true;root.hidden=false;$('#projection-ar').setAttribute('aria-pressed','false');$('#projection-black').setAttribute('aria-pressed','true');restoreProjection();}
+  $('#ar-close').onclick=()=>{stopCamera();showBlack();};
+  let blackMode=false, connectingBlack=false;
+  retry.onclick=()=>void connectBlack();
+  async function connectBlack(){
+    if(!blackMode||connectingBlack)return;
+    if(stream){blackStatus.textContent='摄像头已连接';markerFollow.resume();return;}
+    if(starting){blackStatus.textContent='摄像头连接中';return;}
+    connectingBlack=true;blackStatus.textContent='正在连接摄像头…';
+    try{
+      await devices();
+      const list=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');
+      if(!blackMode||starting)return;
+      const selected=preferred?.id && (list.find(d=>d.deviceId===preferred.id) || (preferred.label && list.filter(d=>d.label===preferred.label).length===1 && list.find(d=>d.label===preferred.label)));
+      if(!selected){blackStatus.textContent=preferred?.id?'上次的摄像头未上线':'首次请在 AR 预览选择摄像头';autoWaiting=Boolean(preferred?.id);return;}
+      select.value=selected.deviceId;
+      await start(true);
+      if(blackMode&&!stream)blackStatus.textContent=status.textContent;
+    }catch{blackStatus.textContent='无法连接摄像头，请检查权限';}
+    finally{connectingBlack=false;}
+  }
+  $('#projection-black').onclick=()=>{blackMode=true;showBlack();void connectBlack();};
   async function openOverlay(autoConnect=false){
+    blackMode=false;if(!output?.geometry())markerFollow.stop();
     if(active && (stream || starting))return;
+    stopBlackEffect();
     active=true;panel.hidden=false;$('#projection-ar').setAttribute('aria-pressed','true');$('#projection-black').setAttribute('aria-pressed','false');document.body.classList.add('ar-active');bg.hidden=false;root.hidden=true;
+    if(stream){await prepareAr(gen);return;}
     await devices();
     if(!active)return;
     if(!autoConnect){message('选择摄像头后点击连接；视频仅在本机处理。');return;}
@@ -154,6 +220,7 @@ export function mountCameraOverlay({root, liveUI, restoreProjection}){
   }
   $('#projection-ar').onclick=()=>openOverlay(true);
   async function handleDeviceChange(){
+    if(blackMode&&autoWaiting){await connectBlack();return;}
     await devices();
     if(!active||!autoWaiting||rechecking||starting)return;
     rechecking=true;
@@ -164,5 +231,5 @@ export function mountCameraOverlay({root, liveUI, restoreProjection}){
     }catch{}finally{rechecking=false;}
   }
   navigator.mediaDevices?.addEventListener('devicechange',handleDeviceChange);addEventListener('resize',layout);addEventListener('pagehide',()=>{stopCamera();navigator.mediaDevices?.removeEventListener('devicechange',handleDeviceChange);});
-  return {render,isActive:()=>active,open:openOverlay};
+  return {render,isActive:()=>active,open:openOverlay,playIntro,stopIntro:stopBlackEffect,refreshOutput:()=>{if(stream&&(blackMode||output?.geometry()))void markerFollow.resume();else markerFollow.stop();}};
 }

@@ -54,6 +54,10 @@ test('audio frames continue when page timers stall in a hidden tab', async t => 
   socket.onmessage({ data: JSON.stringify({ type: 'session.ready' }) });
   for (let i = 0; i < 50; i++) emit({ data: new Int16Array(320).fill(1000).buffer });
   assert.equal(sent.length, 50, 'one second of audio is sent even when page timers never fire');
+  emit({ data: { frame: new ArrayBuffer(640), capturedAt: 0.5 } });
+  assert.equal(sent.length, 50, 'stale audio queued during a busy render is not replayed');
+  emit({ data: { frame: new ArrayBuffer(640), capturedAt: 0.98 } });
+  assert.equal(sent.length, 51, 'fresh worklet audio continues after stale audio is dropped');
   assert.equal(new DataView(sent[0]).getInt16(0, true), 1000);
   socket.onmessage({ data: JSON.stringify({ type: 'audio.started' }) });
   emit({ data: new Int16Array(320).fill(1000).buffer });

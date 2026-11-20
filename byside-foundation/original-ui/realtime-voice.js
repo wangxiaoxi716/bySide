@@ -2,7 +2,7 @@ import { beginPresentation } from './state.js';
 import { PcmFrameEncoder } from './pcm-frames.mjs';
 
 // Browser-side audio only. The local foundation owns the Doubao connection and key.
-export function createRealtimeVoiceSession({ fullDuplex = false, desktopVision = false, tools = [], onToolCall, onReady, onVision, onClose, onState, onTranscript, onReply, onError } = {}) {
+export function createRealtimeVoiceSession({ fullDuplex = false, desktopVision = false, tools = [], onToolCall, onReady, onVision, onClose, onState, onTranscript, onReply, onError, onMicWarning } = {}) {
   let active = false, generation = 0, resources = null, releaseLock = null, finishResolve = null, stopped = Promise.resolve();
   let lastState = null;
   const notify = value => {
@@ -18,6 +18,7 @@ export function createRealtimeVoiceSession({ fullDuplex = false, desktopVision =
     if (!current) return;
     current.presentation?.end();
     current.ready = false;
+    clearInterval(current.micWatchdog);
     if (current.processor) {
       current.processor.onaudioprocess = null;
       current.processor.onprocessorerror = null;
@@ -88,11 +89,17 @@ export function createRealtimeVoiceSession({ fullDuplex = false, desktopVision =
       if (current.micContext.sampleRate < 16000) throw new Error('麦克风采样率不支持实时语音。');
       await Promise.all([current.micContext.resume(), current.playContext.resume()]);
       if (!active || token !== generation) return false;
-      const sendFrame = frame => {
+      const sendFrame = (frame, capturedAt) => {
         if (!active || resources !== current || token !== generation || !current.ready || current.socket?.readyState !== WebSocket.OPEN) return;
-        if (current.socket.bufferedAmount > 256000) { fail('实时语音连接拥塞，请重新开始。', current); return; }
+        if (Number.isFinite(capturedAt) && current.micContext.currentTime - capturedAt > .20) return;
+        if (current.socket.bufferedAmount > 12800) return;
         const silence = !fullDuplex && (current.speaking || current.playContext.currentTime < current.playNext + 0.15);
         current.socket.send(silence ? new ArrayBuffer(640) : frame);
+        current.lastAudioSend = Date.now();
+        if (!silence) {
+          const samples=new Int16Array(frame);
+          for(let i=0;i<samples.length;i+=8)if(Math.abs(samples[i])>=180){current.lastMicSignal=current.lastAudioSend;break;}
+        }
       };
       current.source = current.micContext.createMediaStreamSource(stream);
       current.sink = current.micContext.createGain(); current.sink.gain.value = 0;
@@ -100,7 +107,7 @@ export function createRealtimeVoiceSession({ fullDuplex = false, desktopVision =
         await current.micContext.audioWorklet.addModule('./voice-capture-worklet.mjs');
         if (!active || token !== generation) return false;
         current.processor = new AudioWorkletNode(current.micContext, 'yatuan-pcm-capture', { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [1] });
-        current.processor.port.onmessage = event => sendFrame(event.data);
+        current.processor.port.onmessage = ({data}) => sendFrame(data?.frame ?? data, data?.capturedAt);
         current.processor.onprocessorerror = () => { if (active && resources === current) fail('麦克风音频处理已中断，请重新开始实时语音。', current); };
       } else {
         // Older webviews also send from capture callbacks instead of page timers.
@@ -134,6 +141,14 @@ export function createRealtimeVoiceSession({ fullDuplex = false, desktopVision =
         if (message.type === 'session.ready') {
           if (current.ready) return;
           current.ready = true;
+          current.lastAudioSend=current.lastMicSignal=Date.now();
+          current.micWatchdog=setInterval(()=>{
+            if(!current.ready||resources!==current||!active)return;
+            const now=Date.now();
+            const warning=now-current.lastAudioSend>2200?'麦克风音频未送达；请检查输入设备，或重新开始实时语音。'
+              :lastState==='listening'&&now-current.lastMicSignal>6000?'未检测到明显的麦克风声音；若你正在说话，请检查系统输入设备和音量。':'';
+            if(warning!==current.micWarning){current.micWarning=warning;onMicWarning?.(warning);}
+          },1000);
           current.presentation.update({ speech: '正在听你说话…' });
           notify('listening');
           onReady?.(message);
@@ -142,6 +157,9 @@ export function createRealtimeVoiceSession({ fullDuplex = false, desktopVision =
           current.presentation.update({ speech: '正在听你说话…' });
           if (current.playing.size === 0) notify('listening');
           onTranscript?.('', false);
+        } else if (message.type === 'transcript.ended') {
+          if(current.playing.size===0)notify('thinking');
+          current.presentation.update({speech:'听到了，正在识别…'});
         } else if (message.type === 'transcript.partial' || message.type === 'transcript.final') {
           current.replyText = '';
           current.presentation.update({ speech: message.text ? `你：${message.text}` : '正在听你说话…' });
@@ -156,7 +174,7 @@ export function createRealtimeVoiceSession({ fullDuplex = false, desktopVision =
         else if (message.type === 'audio.done' || message.type === 'response.done' || message.type === 'response.canceled') { current.speaking = false; if (current.playing.size === 0) notify('listening'); }
         else if (message.type === 'audio.flush') flush(current);
         else if (message.type === 'error') fail(message.message || '实时语音服务不可用。', current);
-        else if (message.type === 'transcript.error') onError?.(message.message || '没有听清，请再说一次。');
+        else if (message.type === 'transcript.error') { if(current.playing.size===0)notify('listening'); onError?.(message.message || '没有听清，请再说一次。'); }
         else if (message.type === 'input.error') onError?.(message.message || '文字发送失败，请重试。');
         else if (message.type.startsWith('vision.')) onVision?.(message);
         else if (message.type === 'tool.call' && Array.isArray(message.items)) {

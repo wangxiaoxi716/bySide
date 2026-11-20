@@ -27,17 +27,18 @@ const positionName = (kind, index) => kind === 'chess'
 /** Voice-controlled games use the same rule functions as the existing game pages. */
 export function createVoiceGameController({ onChange = () => {}, random = Math.random } = {}) {
   let kind = null, game = null, lastCard = null, lastRoll = null, speech = '';
+  let revision = 0;
 
   function snapshot() {
     if (!kind || !game) return null;
     return { kind, game: structuredClone(game), mode: kind === 'monopoly' ? 'solo' : 'pet', speech, lastCard, lastRoll, voiceControlled: true };
   }
-  function publish() { onChange(kind, snapshot()); }
+  function publish() { revision++; onChange(kind, snapshot()); }
   function clear() {
     kind = null; game = null; lastCard = null; lastRoll = null; speech = '';
-    onChange(null, null);
+    publish();
   }
-  function discard() { kind = null; game = null; lastCard = null; lastRoll = null; speech = ''; }
+  function discard() { revision++; kind = null; game = null; lastCard = null; lastRoll = null; speech = ''; }
 
   function status() {
     if (!game) return { ok: false, message: '还没有开始游戏，请先选择五子棋、井字棋或大富翁。' };
@@ -70,7 +71,7 @@ export function createVoiceGameController({ onChange = () => {}, random = Math.r
     return { ...status(), message: speech };
   }
 
-  function place(row, column) {
+  function place(row, column, suggestion) {
     const rules = kind === 'chess' ? gomoku : ticTacToe;
     const size = kind === 'chess' ? 15 : 3;
     if (!Number.isInteger(row) || !Number.isInteger(column) || row < 1 || column < 1 || row > size || column > size) {
@@ -85,10 +86,14 @@ export function createVoiceGameController({ onChange = () => {}, random = Math.r
     const userPosition = positionName(kind, index);
     let assistantPosition = null;
     if (!game.winner && !game.draw) {
-      const reply = rules.chooseMove(game, { level: 'gentle' });
-      if (Number.isInteger(reply)) { game = rules.playMove(game, reply); assistantPosition = positionName(kind, reply); }
+      const suggested = Number.isInteger(suggestion?.index) && suggestion.index>=0 && suggestion.index<game.board.length
+        && game.board[suggestion.index]===0 ? suggestion.index : null;
+      let reply=suggested, next=reply===null?game:rules.playMove(game,reply);
+      if(next===game){reply=rules.chooseMove(game,{level:'gentle'});if(Number.isInteger(reply))next=rules.playMove(game,reply);}
+      if(next!==game){game=next;assistantPosition=positionName(kind,reply);}
     }
     speech = game.winner ? (game.winner === 1 ? '你赢啦！' : '这次我连成了，谢谢一起下棋。') : game.draw ? '这一盘平局啦。' : `你下在${userPosition}，我下在${assistantPosition}。轮到你了。`;
+    if(typeof suggestion?.feedback==='string'&&suggestion.feedback.trim())speech=`${suggestion.feedback.trim().slice(0,60)} ${speech}`;
     publish();
     return { ...status(), userMove: userPosition, assistantMove: assistantPosition, message: speech };
   }
@@ -160,5 +165,6 @@ export function createVoiceGameController({ onChange = () => {}, random = Math.r
     if (item.name === 'operate_tabletop_game') return action(input);
     return { ok: false, message: '这个游戏操作暂不可用。' };
   }
-  return { handleTool, snapshot, clear, discard, isActive: () => Boolean(game) };
+  return { handleTool, snapshot, clear, discard, isActive: () => Boolean(game), revision:()=>revision,
+    placePhysical(row,column,suggestion){return kind==='chess'||kind==='tic-tac-toe'?place(row,column,suggestion):status();} };
 }

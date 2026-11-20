@@ -53,13 +53,13 @@ function flower(style, cls = '') {
     return `<svg class="grown-flower ${cls}" viewBox="0 0 90 125" aria-hidden="true"><path d="M25 123Q25 80 47 45" fill="none" stroke="#77934a" stroke-width="5"/><path d="M31 91Q8 83 15 68Q37 66 35 85" fill="#97b55c"/><g fill="${p}" stroke="#e9dbb2" stroke-width=".8">${[0, 72, 144, 216, 288].map(a => `<ellipse cx="48" cy="27" rx="12" ry="20" transform="rotate(${a} 48 46)"/>`).join('')}</g><circle cx="48" cy="46" r="9" fill="${c}"/></svg>`;
 }
 
-export function characterArt(state, {className = ''} = {}) {
+export function characterArt(state, {className = '', decorateAnimation = true} = {}) {
     const asset = getMotionAsset(state);
     if (asset) {
         const growthAnimation = state.character === 'yatuan' && [4, 5].includes(state.demoStep);
         const label = growthAnimation ? state.demoStep === 4 ? '芽团长出花苞' : '芽团花朵绽放' : '伙伴动作';
         const media = /\.(webm|mp4)$/.test(asset) ? `<video src="${esc(asset)}" autoplay loop muted playsinline aria-label="${label}"></video>` : `<img src="${esc(asset)}" alt="${label}">`;
-        const flowers = growthAnimation ? '' : state.character === 'yatuan' && state.growthStage === 2 ? '<span class="bud-stem"><i></i></span>' : state.character === 'yatuan' && state.growthStage === 3 ? Array.from({length: state.flowerCount}, (_, i) => flower(state.flowerStyle, `flower-${i}`)).join('') : '';
+        const flowers = !decorateAnimation || growthAnimation ? '' : state.character === 'yatuan' && state.growthStage === 2 ? '<span class="bud-stem"><i></i></span>' : state.character === 'yatuan' && state.growthStage === 3 ? Array.from({length: state.flowerCount}, (_, i) => flower(state.flowerStyle, `flower-${i}`)).join('') : '';
         return `<div class="character animated-character ${className}">${media}${flowers}</div>`;
     }
     const id = `pet-clip-${++serial}`;
