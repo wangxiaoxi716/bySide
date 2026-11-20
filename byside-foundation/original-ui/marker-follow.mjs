@@ -1,4 +1,5 @@
 import { planeTransform, transformPoint, validQuad } from './plane-geometry.mjs';
+import { createPlacementGate, findDarkPieces, projectedCell, readProjectedBoard } from './physical-chess.mjs';
 
 const STORAGE = 'yatuan:projector-marker:v1';
 const GRID = [{x:0,y:0},{x:6,y:0},{x:6,y:6},{x:0,y:6}];
@@ -6,9 +7,12 @@ const TARGETS = [{x:.24,y:.24},{x:.76,y:.24},{x:.76,y:.76},{x:.24,y:.76}];
 const MARKER = '1011010100110010';
 
 export function markerMatches(bits) {
-  for (let turn=0;turn<4;turn++) {
-    if (bits.join('')===MARKER) return true;
-    bits=Array.from({length:16},(_,index)=>bits[(3-index%4)*4+Math.floor(index/4)]);
+  const mirrored=Array.from({length:16},(_,index)=>bits[(3-Math.floor(index/4))*4+index%4]);
+  for(let orientation of [bits,mirrored]){
+    for(let turn=0;turn<4;turn++){
+      if(orientation.join('')===MARKER)return true;
+      orientation=Array.from({length:16},(_,index)=>orientation[(3-index%4)*4+Math.floor(index/4)]);
+    }
   }
   return false;
 }
@@ -238,7 +242,7 @@ export function createFollowerMotion(root, onDraw=()=>{}) {
   };
 }
 
-export function mountMarkerFollow({root,video,controls,loadCv,device,output,localPreview=()=>true}) {
+export function mountMarkerFollow({root,video,controls,loadCv,device,output,localPreview=()=>true,physical}) {
   const canvas=document.createElement('canvas'), context=canvas.getContext('2d',{willReadFrequently:true});
   const button=document.createElement('button'), status=document.createElement('span'), dot=document.createElement('div');
   button.type='button';button.textContent='校准角色跟随';status.setAttribute('role','status');
@@ -247,6 +251,56 @@ export function mountMarkerFollow({root,video,controls,loadCv,device,output,loca
   mode.setAttribute('aria-label','角色跟随目标');
   mode.append(new Option('ArUco 标签','marker'),new Option('蓝白小标签（20 mm）','blue-tag'),new Option('白棋子','stone'));
   controls.append(mode,button,status);
+  const physicalStatus=document.createElement('span');
+  physicalStatus.setAttribute('role','status');
+  controls.append(physicalStatus);
+  const placement=createPlacementGate();
+  let lastPhysicalFrame=-1,lastPhysicalScan=-Infinity,physicalKind,physicalMoveCount=0,physicalPending=false;
+  function resetPlacement(){
+    placement.reset();lastPhysicalFrame=-1;physicalKind=undefined;physicalMoveCount=0;
+  }
+  function scanPhysical(now){
+    if(physicalPending||now-lastPhysicalScan<100)return;
+    lastPhysicalScan=now;
+    const game=physical?.game();
+    if(!game||!['chess','tic-tac-toe'].includes(game.kind)){
+      resetPlacement();physicalStatus.textContent='';return;
+    }
+    const board=output?.connected()?output.board():localPreview()?readProjectedBoard(root):null;
+    if(!board||board.kind!==game.kind){physicalStatus.textContent='等待投影棋盘就绪';return;}
+    if(game.game.winner||game.game.draw){physicalStatus.textContent='本局已结束';return;}
+    if(game.game.turn!==1){physicalStatus.textContent='等芽团下完';return;}
+    if(physicalKind!==game.kind||game.game.moves.length<physicalMoveCount){
+      resetPlacement();
+      placement.reset({armed:game.game.moves.length===0});
+    }
+    physicalKind=game.kind;physicalMoveCount=game.game.moves.length;
+    if(video.currentTime===lastPhysicalFrame)return;
+    lastPhysicalFrame=video.currentTime;
+    const [width,height]=screenGeometry();
+    try{
+      const image=sample(800);
+      const mappedCells=findDarkPieces(window.cv,image).map(point=>{
+        const mapped=transformPoint(calibration.matrix,{x:point.x/image.width,y:point.y/image.height});
+        return mapped?projectedCell({x:mapped.x*width,y:mapped.y*height},board):null;
+      }).filter(index=>index!==null);
+      const cells=mappedCells.filter(index=>game.game.board[index]===0);
+      const index=placement.update(cells,now);
+      if(index!==null){
+        const size=game.kind==='chess'?15:3;
+        const captured=canvas.toDataURL('image/jpeg',.68);
+        physicalPending=true;
+        physicalStatus.textContent='已确认落子，芽团正在看棋盘';
+        void physical.play(Math.floor(index/size)+1,index%size+1,captured).then(result=>{
+          if(enabled)physicalStatus.textContent=result.message;
+        }).catch(()=>{if(enabled)physicalStatus.textContent='本次落子未完成，请拿开棋子后重试';})
+          .finally(()=>{physicalPending=false;});
+      }else if(cells.length>1)physicalStatus.textContent='检测到多个候选，请只放一颗黑棋子';
+      else if(cells.length===1)physicalStatus.textContent='检测到空位上的黑棋子，请停稳';
+      else if(mappedCells.length)physicalStatus.textContent='没有检测到空位落子，请把黑棋子放到空位中央';
+      else physicalStatus.textContent='等待黑棋子，请放在空位中央';
+    }catch{resetPlacement();physicalStatus.textContent='暂时无法读取棋盘摄像头画面';}
+  }
   let frame=0, generation=0, enabled=false, calibrating=false, loading=false, lastScan=0, lastSeen=0, position, pendingStone, previousStone;
   let calibration;
   let lastVideoTime=-1;
@@ -280,7 +334,10 @@ export function mountMarkerFollow({root,video,controls,loadCv,device,output,loca
     frame=requestAnimationFrame(scan);
     if(now-lastScan<(mode.value==='marker'?75:mode.value==='blue-tag'?45:30))return;
     lastScan=now;
-    if(!applicable()){reset();status.textContent='跟随需按当前全屏尺寸校准';cancelAnimationFrame(frame);frame=0;return;}
+    if(!applicable()){reset();resetPlacement();status.textContent='请按当前投影窗口尺寸校准';cancelAnimationFrame(frame);frame=0;return;}
+    if(root.querySelector('.projection-scene')?.hidden){scanPhysical(now);return;}
+    if(physicalKind)resetPlacement();
+    if(physicalStatus.textContent)physicalStatus.textContent='';
     const actor=character();
     if(!actor||root.querySelector('.projection-scene')?.hidden||(!output?.geometry()&&actor.closest('[hidden]')))return;
     let point, stone;
@@ -339,13 +396,14 @@ export function mountMarkerFollow({root,video,controls,loadCv,device,output,loca
     catch{status.textContent='追踪组件未加载';}
     finally{loading=false;}
   }
-  function stop(){enabled=false;generation++;cancelAnimationFrame(frame);frame=0;setDot(false);status.textContent='';reset();}
+  function stop(){enabled=false;generation++;cancelAnimationFrame(frame);frame=0;setDot(false);status.textContent='';physicalStatus.textContent='';resetPlacement();reset();}
   document.addEventListener('fullscreenchange',()=>{if(enabled)void resume();});
   const settle=(ms)=>new Promise(resolve=>setTimeout(resolve,ms));
   button.onclick=async()=>{
     if(calibrating)return;
     if(!enabled){status.textContent='请先连接摄像头';return;}
     calibrating=true;button.disabled=true;
+    resetPlacement();
     const token=++generation, initial=geometry();
     const check=()=>{if(token!==generation||!enabled||JSON.stringify(initial)!==JSON.stringify(geometry()))throw new Error('校准中断，请保持设备和窗口尺寸不变');};
     try{

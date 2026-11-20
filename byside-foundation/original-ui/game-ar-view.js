@@ -103,6 +103,6 @@ export function renderGameProjection({ game, snapshot, connected }) {
   const view = game === 'monopoly' ? monopolyView(snapshot) : chessView(game, snapshot);
   const connection = snapshot?.voiceControlled ? '语音对局' : connected ? '已同步棋室' : snapshot ? '棋室已离线 · 保留最后画面' : '等待棋室连接';
   const instruction = snapshot?.voiceControlled ? '说出位置或操作，和芽团一起玩' : '在游戏页面操作 · 投影同步显示';
-  const caption = snapshot?.voiceControlled ? '<p class="gar-voice-caption" aria-live="polite"></p>' : '';
+  const caption = snapshot?.voiceControlled ? `<p class="gar-voice-caption" aria-live="polite"${snapshot.physicalReply?` data-physical-reply="${esc(snapshot.speech||'')}"`:''}></p>` : '';
   return `<div class="gar-layout" data-game="${game}">${view.board}<aside class="gar-info"><div class="gar-brand"><div><small>芽团 · 桌面游戏</small><strong>${titles[game]}</strong></div></div><div class="gar-status"><small>${esc(connection)}</small><strong>${esc(view.status)}</strong></div>${view.players ? `<div class="gar-players">${view.meta}</div>` : `<div class="gar-meta">${esc(view.meta)}</div>`}<p class="gar-detail">${esc(view.detail)}</p>${caption}<div class="gar-footer">${instruction}</div></aside><div class="gar-mascot"><img src="icon.svg" alt=""></div></div>`;
 }

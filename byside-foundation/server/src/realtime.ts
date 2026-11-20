@@ -1,12 +1,13 @@
 import { randomUUID } from 'crypto';
 import WebSocket, { WebSocketServer, RawData } from 'ws';
 import type { Store } from './modules';
+import { createAudioFrameBudget } from './realtime-audio-rate';
 import { analyzeDesktop, DesktopVisionSession, desktopTool, desktopInstructions, desktopObservationFailure, validateDesktopImage, DESKTOP_TOOL_NAME, type DesktopChat } from './desktop-vision';
 
 const OPEN = WebSocket.OPEN;
 const keyConfigured = () => process.env.VOLC_REALTIME_API_KEY || process.env.VOLC_SPEECH_API_KEY || process.env.VOLC_API_KEY;
 export const realtimeProvider = () => process.env.YATUAN_REALTIME_PROVIDER === 'bailian' ? 'bailian' : 'doubao';
-const bailianHost = () => process.env.BAILIAN_REALTIME_HOST?.match(/^llm-[a-z0-9-]+\.(?:cn-beijing|ap-southeast-1)\.maas\.aliyuncs\.com$/)?.[0];
+export const bailianHost = () => process.env.BAILIAN_REALTIME_HOST?.match(/^llm-[a-z0-9-]+\.(?:cn-beijing|ap-southeast-1)\.maas\.aliyuncs\.com$/)?.[0];
 export const realtimeConfigured = () => Boolean(realtimeProvider() === 'bailian' ? process.env.BAILIAN_API_KEY && bailianHost() : keyConfigured());
 const bailianEvents: Record<string, string> = {
   'session.updated': 'session.created',
@@ -63,18 +64,33 @@ export function createRealtimeServer(db: Store, options?: { chat: DesktopChat; v
     const connectionId = randomUUID();
     const bailian = realtimeProvider() === 'bailian';
     let omniVision = false, observing = false, audioSent = false, lastImage = 0;
+    let omniSpeakingTurn = false, omniResponseActive = false, omniCancelPending = false;
+    let latestImage: {image: string; at: number}|undefined;
     const omniCalls = new Map<string, any>();
     let upstream: WebSocket | undefined, started = false, ready = false, closing = false, released = false, fullDuplex = false, devicePresentation = false;
-    let timer: NodeJS.Timeout | undefined, queue: Promise<void> = Promise.resolve();
+    let timer: NodeJS.Timeout | undefined, turnTimer: NodeJS.Timeout | undefined, queue: Promise<void> = Promise.resolve();
     let userSeq = 0, userId: string | undefined, lastCompletedUser: string | undefined, userPartial = '', userFinal = false;
     let vision: DesktopVisionSession | undefined, sessionConfig: any, baseInstructions = '', typedAbort: AbortController | undefined;
     const completedVisionCalls = new Set<string>();
     let responseSeq = 0, replyId: string | undefined, replyUser: string | undefined, replyText = '', replyRecorded = false, speaking = false, motionTouched = false;
-    let audioWindow = Date.now(), audioFrames = 0;
+    const acceptAudioFrame = createAudioFrameBudget();
     const pendingCalls = new Set<string>(), seenEvents = new Set<string>();
     const clearPresentation = () => { if (devicePresentation) { devicePresentation = false; db.setRealtimePresentation(null); } };
-    const finish = () => { if (released) return; released = true; vision?.close(); typedAbort?.abort(); clearPresentation(); if (timer) clearTimeout(timer); if (owner === browser) owner = undefined; };
+    const finish = () => { if (released) return; released = true; vision?.close(); typedAbort?.abort(); clearPresentation(); if (timer) clearTimeout(timer); clearTimeout(turnTimer); if (owner === browser) owner = undefined; };
     const sendProvider = (event: object) => { if (upstream?.readyState === OPEN) upstream.send(JSON.stringify(event)); };
+    const sendOmniImage = () => {
+      if (!observing || !omniSpeakingTurn || !audioSent || !latestImage) return;
+      const now = Date.now();
+      if (now-latestImage.at>1800 || now-lastImage<1000) return;
+      lastImage=now;
+      sendProvider({ type:'input_image_buffer.append', image:latestImage.image });
+      latestImage=undefined;
+    };
+    const cancelOmni = () => {
+      if (!omniResponseActive || omniCancelPending) return;
+      omniCancelPending=true;
+      sendProvider({ type:'response.cancel' });
+    };
     const closeProvider = () => {
       if (closing) return;
       closing = true; ready = false;
@@ -109,9 +125,8 @@ export function createRealtimeServer(db: Store, options?: { chat: DesktopChat; v
       if (binary) {
         const pcm = buf(raw);
         if (!ready || !upstream || upstream.readyState !== OPEN) return;
-        if (pcm.length !== 640 || upstream.bufferedAmount > 512000) { fail('invalid-audio', '音频需为 20 毫秒的 16 kHz 单声道 PCM'); return; }
-        if (Date.now() - audioWindow >= 1000) { audioWindow = Date.now(); audioFrames = 0; }
-        if (++audioFrames > 75) { fail('audio-rate', '音频发送过快，请按实时速度发送'); return; }
+        if (pcm.length !== 640) { fail('invalid-audio', '音频需为 20 毫秒的 16 kHz 单声道 PCM'); return; }
+        if (!acceptAudioFrame() || upstream.bufferedAmount > 64000) return;
         sendProvider({ type: 'input_audio_buffer.append', audio: (typedAbort ? Buffer.alloc(640) : pcm).toString('base64') });
         audioSent = true;
         return;
@@ -167,6 +182,30 @@ export function createRealtimeServer(db: Store, options?: { chat: DesktopChat; v
                 } });
                 return;
               }
+              if (event.type === 'input_audio_buffer.speech_started') { clearTimeout(turnTimer); omniSpeakingTurn=true; sendOmniImage(); }
+              if (event.type === 'input_audio_buffer.speech_stopped') {
+                clearTimeout(turnTimer);
+                emit({type:'transcript.ended'});
+                turnTimer=setTimeout(()=>emit({type:'transcript.error',message:'听到了声音，但百炼没有开始回复。请停顿后再说一次。'}),8000);
+              }
+              if (['input_audio_buffer.speech_stopped','input_audio_buffer.committed','input_audio_buffer.cleared'].includes(event.type)) omniSpeakingTurn=false;
+              if (event.type === 'response.created') { clearTimeout(turnTimer); omniResponseActive=true; omniCancelPending=false; }
+              if (event.type === 'error') {
+                const detail=event.error ?? event.data?.error ?? event.payload?.error ?? event.data ?? event;
+                const safeCode=String(detail.code ?? detail.error_code ?? detail.status_code ?? event.code ?? event.status_code ?? detail.type ?? '').match(/^[a-zA-Z0-9_.-]{1,64}$/)?.[0];
+                const reason=String(detail.message ?? detail.error_message ?? detail.status_message ?? event.message ?? event.status_message ?? '');
+                if (/no.{0,18}(active|ongoing).{0,12}response|no response to cancel|response.{0,25}not in progress|没有.{0,12}响应.{0,10}取消/i.test(reason)) {
+                  omniResponseActive=false; omniCancelPending=false; return;
+                }
+                if (ready&&/input_image_buffer\.append|invalid image|image.{0,20}(size|format|too large)|图片.{0,15}(格式|过大)/i.test(`${detail.param ?? ''} ${reason}`)) {
+                  latestImage=undefined; emit({ type:'vision.error', message:'百炼拒绝了一帧桌面图像，语音仍可继续。' }); return;
+                }
+                const hint=/quota|balance|arrears|insufficient|额度|欠费/i.test(reason)?'额度或余额不足，请检查百炼账户'
+                  :/rate.limit|too many requests|throttl|限流/i.test(reason)?'请求暂时受限，请稍后重试'
+                  :!ready?'连接初始化失败，请检查业务空间和模型开通状态':'会话中断，请重新开始实时语音';
+                fail('provider-error', `百炼${hint}${safeCode?`（${safeCode}）`:''}`);
+                return;
+              }
               if (event.type === 'response.audio.delta' && !speaking) {
                 speaking = true; motionTouched = true; emit({ type: 'audio.started' }); persist(() => db.update({ motion: 'speaking' }));
               }
@@ -175,6 +214,7 @@ export function createRealtimeServer(db: Store, options?: { chat: DesktopChat; v
                 return;
               }
               if (event.type === 'response.done') {
+                omniResponseActive=false; omniCancelPending=false;
                 const items = [...omniCalls.values()].filter(item => item.response_id === event.response?.id && !completedVisionCalls.has(item.call_id));
                 omniCalls.clear();
                 if (event.response?.status === 'completed' && items.length) {
@@ -182,6 +222,7 @@ export function createRealtimeServer(db: Store, options?: { chat: DesktopChat; v
                   emit({ type: 'tool.call', items: items.map(item => ({ callId: item.call_id, name: item.name, arguments: item.arguments })) });
                 }
                 if (event.response?.status === 'cancelled') event.type = 'response.canceled';
+                if (event.response?.status === 'failed') emit({type:'transcript.error',message:'百炼没有生成本轮回复，请再说一次。'});
               }
               event.type = bailianEvents[event.type] || event.type;
             }
@@ -192,7 +233,7 @@ export function createRealtimeServer(db: Store, options?: { chat: DesktopChat; v
             else if (type === 'session.closed') { closing = true; ready = false; if (motionTouched) { motionTouched = false; persist(() => db.update({ motion: 'idle' })); } if (timer) clearTimeout(timer); void queue.finally(() => { emit({ type: 'session.closed' }); if (browser.readyState === OPEN) browser.close(1000); upstream?.close(); finish(); }); }
             else if (type === 'conversation.item.input_audio_transcription.started') {
               userId = `realtime-user-${connectionId}-${++userSeq}`; userFinal = false; userPartial = '';
-              if (fullDuplex) { emit({ type: 'audio.flush' }); if (speaking) sendProvider({ type: 'response.cancel' }); }
+              if (fullDuplex) { emit({ type: 'audio.flush' }); if (bailian)cancelOmni(); else if (speaking)sendProvider({ type: 'response.cancel' }); }
               emit({ type: 'transcript.started' });
             } else if (type === 'conversation.item.input_audio_transcription.delta') {
               userPartial = eventText(event); emit({ type: 'transcript.partial', text: userPartial });
@@ -242,20 +283,24 @@ export function createRealtimeServer(db: Store, options?: { chat: DesktopChat; v
       }
       if (!ready) { fail('not-ready', '实时语音尚未准备好'); return; }
       if (bailian) {
-        if (command.type === 'vision.pause') { observing = false; return; }
+        if (command.type === 'vision.pause') { observing = false; latestImage=undefined; return; }
         if (command.type === 'vision.resume') { observing = omniVision; return; }
         if (command.type === 'vision.frame') {
-          if (!observing || !audioSent || Date.now() - lastImage < 900) return;
+          if (!observing) return;
           try { validateDesktopImage(command.image); }
           catch { emit({ type: 'vision.error', message: '桌面图片无效' }); return; }
-          lastImage = Date.now();
-          sendProvider({ type: 'input_image_buffer.append', image: command.image.split(',')[1] });
+          const image=command.image.split(',')[1];
+          if (!command.image.startsWith('data:image/jpeg;base64,') || image.length>256000) {
+            emit({ type:'vision.error', message:'百炼桌面图片需为 JPEG，编码后不超过 256 KB；语音仍可继续。' }); return;
+          }
+          latestImage={image,at:Date.now()};
+          sendOmniImage();
           emit({ type: 'vision.frame.accepted', frameId: command.frameId });
           return;
         }
         if (command.type === 'input.mute' || command.type === 'input.unmute' || command.type === 'input.commit') return;
         if (command.type === 'input.text' && typeof command.text === 'string' && command.text.trim() && command.text.length <= 1000) {
-          if (speaking || replyId || pendingCalls.size) { emit({ type: 'input.error', message: '芽团正在回应，请稍后再试。' }); return; }
+          if (omniResponseActive || speaking || replyId || pendingCalls.size) { emit({ type: 'input.error', message: '芽团正在回应，请稍后再试。' }); return; }
           const content = command.text.trim(), id = `realtime-user-${connectionId}-typed-${++userSeq}`;
           lastCompletedUser = id;
           persist(() => db.voiceUser(id, content));
@@ -293,7 +338,7 @@ export function createRealtimeServer(db: Store, options?: { chat: DesktopChat; v
         if (!state || !['idle', 'listening', 'thinking', 'speaking'].includes(state.motion) || typeof state.speech !== 'string' || state.speech.length > 3000) { fail('invalid-presentation', '实时语音显示状态无效'); return; }
         db.setRealtimePresentation({ motion: state.motion, speech: state.speech });
       } else if (command.type === 'input.commit') sendProvider({ type: 'input_audio_buffer.commit' });
-      else if (command.type === 'response.cancel') { typedAbort?.abort(); emit({ type: 'audio.flush' }); sendProvider({ type: 'response.cancel' }); }
+      else if (command.type === 'response.cancel') { typedAbort?.abort(); emit({ type: 'audio.flush' }); if(bailian)cancelOmni();else sendProvider({ type: 'response.cancel' }); }
       else if (command.type === 'input.mute') sendProvider({ type: 'input_audio_mute.commit' });
       else if (command.type === 'input.unmute') sendProvider({ type: 'input_audio_unmute.commit' });
       else if (command.type === 'tool.result' && typeof command.callId === 'string' && pendingCalls.has(command.callId)) {

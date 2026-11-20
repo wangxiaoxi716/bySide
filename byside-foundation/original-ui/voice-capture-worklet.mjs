@@ -3,7 +3,7 @@ import { PcmFrameEncoder } from './pcm-frames.mjs';
 class YatuanPcmCapture extends AudioWorkletProcessor {
   constructor() {
     super();
-    this.encoder = new PcmFrameEncoder(sampleRate, frame => this.port.postMessage(frame, [frame]));
+    this.encoder = new PcmFrameEncoder(sampleRate, frame => this.port.postMessage({frame,capturedAt:currentTime}, [frame]));
   }
 
   process(inputs, outputs) {

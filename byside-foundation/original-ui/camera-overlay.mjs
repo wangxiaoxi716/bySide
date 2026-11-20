@@ -19,7 +19,7 @@ function loadCv(){
     timer=setTimeout(()=>reject(new Error('视觉组件启动超时，请刷新页面重试。')),20000);
   });
 }
-export function mountCameraOverlay({root, liveUI, restoreProjection, output}){
+export function mountCameraOverlay({root, liveUI, restoreProjection, output, physical}){
   const panel=$('#ar-panel'),bg=$('#projection-camera'),drawing=$('#ar-canvas'),status=$('#ar-status'),select=$('#ar-device'),begin=$('#ar-start'),sizing=$('#ar-scale');
   const ctx=drawing.getContext('2d'),sample=document.createElement('canvas'),sampleCtx=sample.getContext('2d',{willReadFrequently:true});
   let active=false,stream=null,tracker=null,tracking=false,selecting=false,points=[],quad=null,frameId=0,lastFrame=0,lastEffect=0,gen=0,releaseLock=null,drag=null,starting=false,searching=false,autoWaiting=false,rechecking=false;
@@ -33,7 +33,7 @@ export function mountCameraOverlay({root, liveUI, restoreProjection, output}){
   retry.type='button';retry.textContent='重连摄像头';
   blackControls.className='black-camera-controls';blackStatus.setAttribute('role','status');
   blackControls.append(retry,blackStatus);panel.append(blackControls);
-  const markerFollow=mountMarkerFollow({root,video:bg,controls:blackControls,loadCv,output,localPreview:()=>!active,device:()=>stream?.getVideoTracks()[0]?.getSettings().deviceId});
+  const markerFollow=mountMarkerFollow({root,video:bg,controls:blackControls,loadCv,output,physical,localPreview:()=>!active,device:()=>stream?.getVideoTracks()[0]?.getSettings().deviceId});
   const savePosition=()=>save(PLACEMENT,position);
   const localRect=()=>cameraRect(innerWidth,innerHeight,bg.videoWidth||1,bg.videoHeight||1);
   const toScreen=p=>{const r=localRect();return{x:r.x+p.x/sample.width*r.width,y:r.y+p.y/sample.height*r.height};};

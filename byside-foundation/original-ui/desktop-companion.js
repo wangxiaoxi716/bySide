@@ -94,9 +94,10 @@ export function createDesktopCompanion(overrides = {}) {
       },
       onTranscript(text, final) {
         if (token !== generation || !text) return;
-        emit({ message: `${final ? '你' : '正在听'}：${text}` });
+        emit({ message: `${final ? '你' : '正在听'}：${text}`, error: '', micWarning: '' });
         if (final) void command(text, false);
       },
+      onMicWarning(message) { if(token===generation)emit({micWarning:message}); },
       onReply(text, final) { if (token === generation && final && text) emit({ message: text, error: '' }); },
       onVision(event) {
         if (token !== generation) return;

@@ -9,6 +9,7 @@ import { GAME_AR_MESSAGE, GAME_AR_WINDOW, createGameProjectionController, validG
 import { renderGameProjection } from './game-ar-view.js';
 import { createVoiceGameController, voiceGameTools } from './voice-games.js';
 import { createFollowerMotion } from './marker-follow.mjs';
+import { readProjectedBoard } from './physical-chess.mjs';
 
 const root = document.querySelector('#projection-root');
 const SCENE_WIDTH = 510;
@@ -53,7 +54,8 @@ function render(s) {
   stats.innerHTML = miniStats(s);
   stats.hidden = !p.showStats;
   const gameCaption = root.querySelector('.gar-voice-caption');
-  if (gameCaption && gameCaption.textContent !== s.speech) gameCaption.textContent = s.speech;
+  const captionText=gameCaption?.dataset.physicalReply||s.speech;
+  if (gameCaption && gameCaption.textContent !== captionText) gameCaption.textContent = captionText;
   const mascot=root.querySelector('.gar-mascot');
   if(mascot&&mascot.dataset.motionKey!==key){
     mascot.innerHTML=characterArt({...s,character:'yatuan'},{decorateAnimation:false});
@@ -88,7 +90,7 @@ function mountOutput(){
         .filter(element=>!element.closest('[hidden]')&&Number(getComputedStyle(element).opacity)>.1)
         .map(element=>{const {left,right,top,bottom}=element.getBoundingClientRect();return {left,right,top,bottom};});
       const fullscreen=Boolean(document.fullscreenElement)||(Math.abs(innerWidth-screen.width)<=2&&Math.abs(innerHeight-screen.height)<=2);
-      send({type:'bounds',geometry:[innerWidth,innerHeight,devicePixelRatio,screenX,screenY,fullscreen],rects});
+      send({type:'bounds',geometry:[innerWidth,innerHeight,devicePixelRatio,screenX,screenY,fullscreen],rects,board:readProjectedBoard(root)});
       lastReport=performance.now();
   }
   function report(){
@@ -115,6 +117,7 @@ function mountOutput(){
       host.hidden=!gameView;root.querySelector('.projection-scene').hidden=Boolean(gameView);
       if(gameView)host.innerHTML=renderGameProjection(gameView);
       else host.replaceChildren();
+      reportBounds();
       render(getState());redraw();
     }else if(message.type==='intro'){
       if(!intro.src)intro.src='./开场视频.mp4';
@@ -133,11 +136,12 @@ function mountOutput(){
 }
 
 function mountControls(){
-let displayWindow,displayGeometry,displayRects,presentedGame=null;
+let displayWindow,displayGeometry,displayRects,displayBoard,presentedGame=null;
 const output={
   connected:()=>Boolean(displayWindow&&!displayWindow.closed),
   geometry:()=>displayWindow&&!displayWindow.closed?displayGeometry:undefined,
   rects:()=>output.geometry()?displayRects:undefined,
+  board:()=>output.geometry()?displayBoard:null,
   send:message=>{if(displayWindow&&!displayWindow.closed)displayWindow.postMessage({projectionControl:true,...message},location.origin);},
 };
 window.addEventListener('message',event=>{
@@ -155,7 +159,7 @@ window.addEventListener('message',event=>{
   if(message.type==='ready'){output.send({type:'game',view:presentedGame});output.send({type:'report-bounds'});}
   if(message.type==='bounds'){
     const changed=JSON.stringify(displayGeometry)!==JSON.stringify(message.geometry);
-    displayGeometry=message.geometry;displayRects=message.rects;
+    displayGeometry=message.geometry;displayRects=message.rects;displayBoard=message.board;
     if(changed)overlay?.refreshOutput();
   }
   if(message.type==='closed'){displayGeometry=undefined;displayRects=undefined;overlay?.refreshOutput();}
@@ -171,7 +175,7 @@ openDisplay.onclick=()=>{
   if(displayWindow)document.querySelector('#projection-black').click();
   else document.querySelector('.projection-tools span').textContent='请允许弹出投影窗口';
 };
-const sendGame=view=>{presentedGame=view;output.send({type:'game',view});};
+const sendGame=view=>{if(presentedGame?.game!==view?.game)displayBoard=null;presentedGame=view;output.send({type:'game',view});};
 document.querySelector('#projection-fullscreen').onclick = async () => {
   try {
     if (document.fullscreenElement) await document.exitFullscreen();
@@ -181,7 +185,7 @@ document.querySelector('#projection-fullscreen').onclick = async () => {
   }
 };
 
-let voiceGame;
+let voiceGame,physicalMove=false;
 const liveUI=mountLiveUI({
   realtimeTools: voiceGameTools,
   onRealtimeToolCall: item => {
@@ -196,17 +200,30 @@ const liveUI=mountLiveUI({
     return result;
   },
 });
-overlay=mountCameraOverlay({root,liveUI,output,restoreProjection:()=>render(getState())});
+overlay=mountCameraOverlay({root,liveUI,output,restoreProjection:()=>render(getState()),physical:{
+  game:()=>voiceGame?.snapshot(),
+  play:async(row,column,image)=>{
+    const snapshot=voiceGame.snapshot(), revision=voiceGame.revision();
+    const size=snapshot?.kind==='chess'?15:3,index=(row-1)*size+column-1;
+    if(!snapshot||snapshot.game.board[index]!==0)return {ok:false,message:'这个位置不能落子'};
+    let suggestion;
+    try{
+      const response=await fetch('/api/v1/vision/game-move',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({game:snapshot.kind,board:snapshot.game.board,index,image}),
+        signal:AbortSignal.timeout(4300),
+      });
+      if(response.ok)suggestion=(await response.json()).suggestion;
+    }catch{}
+    if(revision!==voiceGame.revision())return {ok:false,message:'棋局已变化，请在当前棋盘重新落子'};
+    physicalMove=true;
+    try{return voiceGame.placePhysical(row,column,suggestion);}
+    finally{physicalMove=false;}
+  },
+}});
 const voiceButton = document.querySelector('#projection-voice');
 const voiceStatus = document.querySelector('#projection-voice-status');
-let voiceStarting = false, voiceStopping = false, voiceOperation = 0, voiceNotice = '', waitingForCamera = false;
-
-function resumeArObservation(status) {
-  const camera = document.querySelector('#projection-camera').srcObject;
-  if (!waitingForCamera || !status.active || !status.visionEnabled || status.observing || status.voiceState !== 'listening' || !camera?.getVideoTracks().some(track => track.readyState === 'live')) return;
-  waitingForCamera = false;
-  queueMicrotask(() => { void liveUI.controller.wake(); });
-}
+let voiceStarting = false, voiceStopping = false, voiceOperation = 0, voiceNotice = '';
 function renderVoiceControl(status = liveUI.controller.getStatus()) {
   const active = voiceStarting || status.active;
   voiceButton.disabled = voiceStopping;
@@ -218,21 +235,19 @@ function renderVoiceControl(status = liveUI.controller.getStatus()) {
   else if (status.active) {
     const connected = ['listening', 'thinking', 'speaking'].includes(status.voiceState);
     if (status.error) voiceStatus.textContent = status.error;
+    else if (status.micWarning) voiceStatus.textContent = status.micWarning;
     else if (status.voiceWarning) voiceStatus.textContent = connected ? `语音已连接。${status.voiceWarning}` : status.voiceWarning;
     else voiceStatus.textContent = messages[status.voiceState] || '正在连接…';
   }
   else voiceStatus.textContent = voiceNotice || status.error || (overlay.isActive() ? '可结合桌面画面' : '');
-  if (status.observing || (!status.active && !voiceStarting)) waitingForCamera = false;
-  resumeArObservation(status);
 }
 liveUI.controller.subscribe(renderVoiceControl);
-window.addEventListener('yatuan:ar-camera-ready', () => resumeArObservation(liveUI.controller.getStatus()));
 voiceButton.addEventListener('click', async () => {
   if (voiceStopping) return;
   if (voiceStarting || liveUI.controller.getStatus().active) {
     overlay.stopIntro();
     output.send({type:'stop-intro'});
-    voiceOperation++; voiceStarting = false; voiceStopping = true; waitingForCamera = false; voiceNotice = '';
+    voiceOperation++; voiceStarting = false; voiceStopping = true; voiceNotice = '';
     renderVoiceControl();
     try { await liveUI.stopDirect(); }
     finally { voiceStopping = false; renderVoiceControl(); }
@@ -241,9 +256,9 @@ voiceButton.addEventListener('click', async () => {
   const operation = ++voiceOperation;
   overlay.playIntro();
   output.send({type:'intro'});
-  voiceStarting = true; waitingForCamera = true; voiceNotice = '';
+  voiceStarting = true; voiceNotice = '';
   renderVoiceControl();
-  try { await liveUI.startDirect(); }
+  try { await liveUI.startDirect({audioOnly:true}); }
   catch (error) { if (operation === voiceOperation && error.name !== 'AbortError') voiceNotice = error.message || '实时语音暂时不可用。'; }
   finally {
     if (operation === voiceOperation) { voiceStarting = false; renderVoiceControl(); }
@@ -272,6 +287,7 @@ const gameProjection = createGameProjectionController({ onUpdate(view) {
   render(getState());
 } });
 voiceGame = createVoiceGameController({ onChange(kind, snapshot) {
+  if(physicalMove&&snapshot)snapshot.physicalReply=true;
   if (!kind) {
     root.querySelector('.projection-scene').hidden = false;
     gameHost.hidden = true; companionButton.hidden = true; gameHost.replaceChildren();
