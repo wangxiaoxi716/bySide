@@ -8,3 +8,8 @@ data/
 
 *.tsbuildinfo
 native-voice/.build/
+
+.DS_Store
+.playwright-mcp/
+.env.*
+!.env.example
